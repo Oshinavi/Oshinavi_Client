@@ -43,8 +43,8 @@ dependencies:
   flutter_inappwebview: ^5.7.2+3
   charset_converter: ^2.0.1
   flutter_neat_and_clean_calendar: ^0.4.1
-  custom_calendar:
-    path: ./custom_calendar
+  infinite_calendar_view:           # forked from https://github.com/pickywawa/infinite_calendar_view
+   path: ./custom_calendar
   sticky_infinite_list_plus: ^4.0.2+2
 
 dev_dependencies:
@@ -99,3 +99,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  infinite_calendar_view:
+    path: ./custom_calendar

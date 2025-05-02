@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/twitter-text@3.1.0/dist/twitter-text.umd.min.js"></script>
+    <script>
+        function getTweetLength(text) {
+          const result = twitter.parseTweet(text);
+          return result.weightedLength;
+        }
+    </script>
+</head>
+<body></body>
+</html>
