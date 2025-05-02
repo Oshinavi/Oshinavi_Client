@@ -72,6 +72,24 @@ class DatabaseService {
         headers: {'Content-Type': 'application/json'},
       );
 
+      // 첫 번째 시도 실패 && 500에러일 경우 한 번 더 재시도
+      if (response.statusCode == 500) {
+        print('🔁 백엔드 500에러, 재시도 중...');
+        await Future.delayed(const Duration(milliseconds: 500)); // 잠깐 대기 후 재시도
+        final retryResponse = await http.get(
+          Uri.parse('$baseUrl/api/tweets/$screenName'),
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        if (retryResponse.statusCode == 200) {
+          final List<dynamic> jsonList = json.decode(retryResponse.body);
+          return jsonList.map((item) => Post.fromMap(item)).toList();
+        } else {
+          print('🛑 재시도 후에도 실패: ${retryResponse.statusCode}');
+          return [];
+        }
+      }
+
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
         return jsonList.map((item) => Post.fromMap(item)).toList();

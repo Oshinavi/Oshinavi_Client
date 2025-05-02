@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mediaproject/pages/login_page.dart';
-import 'package:mediaproject/pages/register_page.dart';
 import 'package:mediaproject/services/auth/auth_gate.dart';
-import 'package:mediaproject/services/auth/login_or_register.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
+import 'package:mediaproject/services/tweet_provider.dart';
 import 'package:mediaproject/themes/theme_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -21,6 +19,8 @@ void main() {
           ChangeNotifierProvider(create: (context) => DatabaseProvider()),
 
           ChangeNotifierProvider(create: (_) => OshiProvider()),
+
+          ChangeNotifierProvider(create: (_) => TweetProvider()),
         ],
       child: const MyApp(),
     ),

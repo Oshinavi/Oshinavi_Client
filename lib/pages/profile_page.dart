@@ -1,135 +1,147 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:mediaproject/components/bio_box.dart';
 import 'package:mediaproject/models/user.dart';
-import 'package:mediaproject/services/auth/auth_service.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
-  // 트위터 유저명
   final String tweetId;
-
-  const ProfilePage({
-    super.key,
-    required this.tweetId
-  });
+  const ProfilePage({super.key, required this.tweetId});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // providers
-  late final databaseProvider =
-  Provider.of<DatabaseProvider>(context, listen: false);
+  late final databaseProvider = Provider.of<DatabaseProvider>(context, listen: false);
 
-  // user info
   UserProfile? user;
-  String? currentUserTweetId;
-
-  // loading...
   bool _isLoading = true;
 
-  // on startup,
   @override
   void initState() {
     super.initState();
-
-    // load user info
     loadUser();
   }
 
-  Future<void> loadUser() async{
-
-    currentUserTweetId = await AuthService().getCurrentTweetid();
-
-    // 예외 처리
-    if (currentUserTweetId == null) {
-      print("🚨 tweetId를 불러오지 못했습니다.");
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    // get the user profile info
-    final tweetId = currentUserTweetId!;
-    user = await databaseProvider.getUserProfile(tweetId);
-
-    // finished loading...
-    setState(() {
-      _isLoading = false;
-    });
+  Future<void> loadUser() async {
+    user = await databaseProvider.getUserProfile(widget.tweetId);
+    setState(() => _isLoading = false);
   }
 
-  //BUILD UI
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("유저 정보를 불러올 수 없음")),
-        body: const Center(child: Text("유저 데이터를 가져오는 데 실패했습니다.")),
+        appBar: AppBar(title: const Text("유저 정보")),
+        body: const Center(child: Text("유저 정보를 불러오는 데 실패했습니다.")),
       );
     }
-    //SCAFFOLD
+
+    final profileImageUrl = user!.userProfileImageUrl?.replaceAll('_normal', '_400x400');
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-
-      //App Bar
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(_isLoading ? '' : user!.username),
-        foregroundColor: Theme.of(context).colorScheme.primary,
+        title: Text(
+          user!.username,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 1,
+        foregroundColor: theme.colorScheme.primary,
       ),
-
-      // Body
-      body: ListView(
-        children: [
-          // username handle
-          Center(
-            child: Text(
-              _isLoading ? '' : '@${user!.tweetId}',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary),
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-          // profile picture
-          Center(
-            child: Container(
-              decoration:
-                BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary,
-                    borderRadius: BorderRadius.circular(25),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 배너와 프로필 이미지
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 배너
+                SizedBox(
+                  height: 160,
+                  width: double.infinity,
+                  child: user!.userProfileBannerUrl != null
+                      ? Image.network(
+                    user!.userProfileBannerUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: theme.colorScheme.surfaceVariant,
+                    ),
+                  )
+                      : Container(color: theme.colorScheme.surfaceVariant),
                 ),
-              padding: const EdgeInsets.all(25),
-              child: Icon(
-                Icons.person,
-                size: 72,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+
+                // 프로필 이미지
+                Positioned(
+                  bottom: -48,
+                  left: 20,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                        )
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 48,
+                      backgroundColor: theme.colorScheme.surface,
+                      backgroundImage: profileImageUrl != null ? NetworkImage(profileImageUrl) : null,
+                      child: profileImageUrl == null
+                          ? Icon(Icons.person, size: 48, color: theme.colorScheme.primary)
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
 
-          const SizedBox(height: 25),
+            const SizedBox(height: 60),
 
-          // profile stats -> number of posts / followers / following
-
-          // follow / unfollow button
-
-          // bio box
-          BioBox(text: user!.bio)
-
-          // list of posts from user
-        ],
-      )
+            // 유저 정보
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user!.username,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onBackground,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '@${user!.tweetId}',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: theme.colorScheme.onSurface.withOpacity(0.65),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  BioBox(text: user!.bio),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }
-

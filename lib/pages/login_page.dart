@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 50),
                 Text(
-                  "Hello New Twitter!",
+                  "트위터 자동 번역 앱",
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontSize: 16,

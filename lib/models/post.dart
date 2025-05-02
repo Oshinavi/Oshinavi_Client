@@ -7,6 +7,7 @@ class Post{
   final String message; //트윗 메시지
   final String translatedMessage; //번역 메시지
   final String tweetAbout; //트윗 주제
+  final String? profileImageUrl; //프로필 이미지 url
   // final int likeCount; //좋아요 수
   // final List<String> likeBy; //좋아요를 누른 유저 id 목록
 
@@ -19,6 +20,7 @@ class Post{
     required this.message,
     required this.translatedMessage,
     required this.tweetAbout,
+    this.profileImageUrl,
     // required this.likeCount,
     // required this.likeBy,
   });
@@ -49,6 +51,7 @@ class Post{
       message: map['tweet_text'] ?? '',
       translatedMessage: map['tweet_translated_text'] ?? '',
       tweetAbout: map['tweet_about'] ?? '',
+      profileImageUrl: map['profile_image_url'],
     );
   }
 }

@@ -1,21 +1,44 @@
 PODS:
+  - charset_converter (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
+  - flutter_inappwebview (0.0.1):
+    - Flutter
+    - flutter_inappwebview/Core (= 0.0.1)
+    - OrderedSet (~> 5.0)
+  - flutter_inappwebview/Core (0.0.1):
+    - Flutter
+    - OrderedSet (~> 5.0)
   - flutter_secure_storage (3.3.1):
     - Flutter
+  - OrderedSet (5.0.0)
 
 DEPENDENCIES:
+  - charset_converter (from `.symlinks/plugins/charset_converter/ios`)
   - Flutter (from `Flutter`)
+  - flutter_inappwebview (from `.symlinks/plugins/flutter_inappwebview/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
 
+SPEC REPOS:
+  trunk:
+    - OrderedSet
+
 EXTERNAL SOURCES:
+  charset_converter:
+    :path: ".symlinks/plugins/charset_converter/ios"
   Flutter:
     :path: Flutter
+  flutter_inappwebview:
+    :path: ".symlinks/plugins/flutter_inappwebview/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
 
 SPEC CHECKSUMS:
+  charset_converter: 82bc1d2e3c70dcb51bf769e9772e3ae5b2571695
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_inappwebview: 180a2f38c18dfbfb8f0c12f7bd42ce02dfd6c765
   flutter_secure_storage: 50035aef357c5a8bdd67fd6bc81370d46efc4d16
+  OrderedSet: aaeb196f7fef5a9edf55d89760da9176ad40b93c
 
 PODFILE CHECKSUM: 4305caec6b40dde0ae97be1573c53de1882a07e5
 

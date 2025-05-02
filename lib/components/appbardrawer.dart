@@ -4,6 +4,8 @@ import 'package:mediaproject/pages/oshi_profile_page.dart';
 import 'package:mediaproject/pages/profile_page.dart';
 import 'package:mediaproject/pages/settings_page.dart';
 import 'package:mediaproject/services/auth/auth_service.dart';
+import 'package:mediaproject/pages/calendar_page.dart'; // 캘린더 페이지 import
+import 'package:mediaproject/pages/monthly_calendar_page.dart';
 
 import '../pages/login_page.dart';
 
@@ -42,7 +44,7 @@ class AppBarDrawer extends StatelessWidget {
       print('Logout successful');
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginPage(onTap: () {})), // 로그인 페이지로 이동 (로그아웃 후)
+        MaterialPageRoute(builder: (context) => LoginPage(onTap: () {})),
       );
     }
   }
@@ -50,7 +52,6 @@ class AppBarDrawer extends StatelessWidget {
   //UI 생성
   @override
   Widget build(BuildContext context) {
-    //Drawer
     return Drawer(
       backgroundColor: Theme.of(context).colorScheme.surface,
       child: SafeArea(
@@ -74,48 +75,43 @@ class AppBarDrawer extends StatelessWidget {
 
               const SizedBox(height: 10,),
 
-              //홈 리스트 타이틀
+              //홈
               AppBarDrawerTile(
                 title: "홈",
                 icon: Icons.home,
                 onTap: () {
-                  // 드로어 닫고 홈으로 나가기
                   Navigator.pop(context);
                 },
               ),
 
-              //프로필 리스트 타이틀
+              //프로필
               AppBarDrawerTile(
                 title: "프로필",
                 icon: Icons.person,
-                  onTap: () async {
-                    Navigator.pop(context); // 메뉴 닫기
-
-                    String? tweetId = await _auth.getCurrentTweetid();
-
-                    if (tweetId != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProfilePage(tweetId: tweetId),
-                        ),
-                      );
-                    } else {
-                      // tweetId가 없을 경우 예외 처리 (예: 에러 다이얼로그 띄우기)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("트윗 ID를 불러올 수 없습니다.")),
-                      );
-                    }
+                onTap: () async {
+                  Navigator.pop(context);
+                  String? tweetId = await _auth.getCurrentTweetid();
+                  if (tweetId != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfilePage(tweetId: tweetId),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("트윗 ID를 불러올 수 없습니다.")),
+                    );
                   }
+                },
               ),
 
+              //내 오시
               AppBarDrawerTile(
                 title: "내 오시",
-                icon: Icons.settings,
+                icon: Icons.favorite_outline,
                 onTap: () {
-                  Navigator.pop(context); // 일단 닫고
-
-                  // ✅ 프레임이 끝난 후 push 실행
+                  Navigator.pop(context);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     Navigator.push(
                       context,
@@ -125,35 +121,46 @@ class AppBarDrawer extends StatelessWidget {
                 },
               ),
 
-              //서치 리스트 타이틀
+              // 📌 캘린더 추가 위치
+              AppBarDrawerTile(
+                title: "캘린더",
+                icon: Icons.calendar_today,
+                onTap: () {
+                  Navigator.pop(context);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MonthlyCalendarPage()),
+                    );
+                  });
+                },
+              ),
 
-              //세팅 리스트 타이틀
-          AppBarDrawerTile(
-            title: "설정",
-            icon: Icons.settings,
-            onTap: () {
-              //일단 홈으로 나간 뒤 설정 페이지로 이동
-              Navigator.pop(context);
-
-              Navigator.push(context, MaterialPageRoute(
-                builder: (context) => SettingsPage(),
-                ),
-              );
-            },
-          ),
+              //설정
+              AppBarDrawerTile(
+                title: "설정",
+                icon: Icons.settings,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsPage()),
+                  );
+                },
+              ),
 
               const Spacer(),
 
               //로그아웃
-            AppBarDrawerTile(
-              title: "로그아웃",
-              icon: Icons.logout,
-              onTap: () => logout(context),
-            )
+              AppBarDrawerTile(
+                title: "로그아웃",
+                icon: Icons.logout,
+                onTap: () => logout(context),
+              ),
             ],
           ),
-        )
-      )
+        ),
+      ),
     );
   }
 }

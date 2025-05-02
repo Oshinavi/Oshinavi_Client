@@ -28,24 +28,24 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
 
   Future<void> loadOshi() async {
     setState(() => _isLoading = true);
-
-    final service = OshiService();
-    final result = await service.getOshi();
+    final result = await OshiService().getOshi();
 
     if (mounted) {
       setState(() {
         _isLoading = false;
-        if (!result.containsKey('error')) {
-          oshi = result;
-        } else {
-          oshi = null;
-        }
+        oshi = result.containsKey('error') ? null : result;
       });
     }
   }
 
+  String? getHighResImage(String? url) {
+    if (url == null) return null;
+    return url.replaceAll('_normal', '_400x400');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final oshiProvider = Provider.of<DatabaseProvider>(context, listen: false);
 
     if (_isLoading) {
@@ -63,27 +63,25 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
             children: [
               const Text("아직 오시를 등록하지 않으신 것 같아요!"),
               const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const OshiRegisterPage()),
-              );
-            },
-            child: const Text("오시 등록"),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const OshiRegisterPage()),
+                  );
+                },
+                child: const Text("오시 등록"),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
-}
+        ),
+      );
+    }
 
     return FutureBuilder(
       future: oshiProvider.getUserProfile(oshi!["oshi_tweet_id"]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
         if (!snapshot.hasData || snapshot.data == null) {
@@ -94,40 +92,87 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
         }
 
         final user = snapshot.data!;
+        final profileImageUrl = getHighResImage(user.userProfileImageUrl);
+        final bannerUrl = user.userProfileBannerUrl;
 
         return Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
-            title: Text(user.username),
-            foregroundColor: Theme.of(context).colorScheme.primary,
+            title: const Text("오시 프로필"),
+            centerTitle: true,
+            backgroundColor: theme.colorScheme.surface,
+            elevation: 1,
+            foregroundColor: theme.colorScheme.primary,
           ),
-          body: ListView(
-            children: [
-              Center(
-                child: Text(
-                  '@${user.tweetId}',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                // 배너 이미지 영역
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: bannerUrl != null
+                          ? Image.network(
+                        bannerUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: theme.colorScheme.surfaceVariant,
+                        ),
+                      )
+                          : Container(color: theme.colorScheme.surfaceVariant),
+                    ),
+
+                    // 프로필 이미지
+                    Positioned(
+                      bottom: -40,
+                      left: 20,
+                      child: CircleAvatar(
+                        radius: 48,
+                        backgroundColor: Colors.white,
+                        backgroundImage: profileImageUrl != null
+                            ? NetworkImage(profileImageUrl)
+                            : null,
+                        child: profileImageUrl == null
+                            ? Icon(Icons.person,
+                            size: 48, color: theme.colorScheme.primary)
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 25),
-              Center(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary,
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.all(25),
-                  child: Icon(
-                    Icons.person,
-                    size: 72,
-                    color: Theme.of(context).colorScheme.primary,
+                const SizedBox(height: 60),
+
+                // 유저 정보
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.username,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onBackground,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '@${user.tweetId}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      BioBox(text: user.bio),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 25),
-              BioBox(text: user.bio),
-            ],
+              ],
+            ),
           ),
         );
       },

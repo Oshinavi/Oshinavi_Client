@@ -66,5 +66,3 @@ android/app/build/
 
 # VSCode / IntelliJ
 .vscode/
-.idea/
-*.iml

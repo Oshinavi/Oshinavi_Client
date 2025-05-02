@@ -14,6 +14,8 @@ class UserProfile {
   final String tweetId;  // tweet_id from Flask
   final String username;
   final String bio;
+  final String? userProfileImageUrl;
+  final String? userProfileBannerUrl;
   // final String? oshiTweetId;  // Optional, oshi_tweet_id from Flask
   // final String? oshiUsername;  // Optional, oshi_username from Flask
 
@@ -22,6 +24,8 @@ class UserProfile {
     required this.tweetId,
     required this.username,
     required this.bio,
+    this.userProfileImageUrl,
+    this.userProfileBannerUrl,
     // this.oshiTweetId,
     // this.oshiUsername,
   });
@@ -33,6 +37,8 @@ class UserProfile {
       tweetId: map['tweet_id'],
       username: map['username'],
       bio: map['bio'],
+      userProfileImageUrl: map['profile_image_url'],
+      userProfileBannerUrl: map['profile_banner_url']
       // oshiTweetId: map['oshi_tweet_id'], // this may be null
       // oshiUsername: map['oshi_username'], // this may be null
     );
