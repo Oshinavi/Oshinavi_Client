@@ -66,3 +66,5 @@ android/app/build/
 
 # VSCode / IntelliJ
 .vscode/
+
+!/custom_calendar/build/

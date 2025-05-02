@@ -1,5 +1,5 @@
 name: custom_calendar
-description: Custom infinite calendar with null safety
+description: "My customized calendar based on infinite_calendar_view"
 version: 2.5.4+custom
 
 environment:
