@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediaproject/components/loading_circle.dart';
 import 'package:mediaproject/components/simplebutton.dart';
 import 'package:mediaproject/components/text_field_login.dart';
+import 'package:mediaproject/pages/home_page.dart';
 import 'package:mediaproject/pages/login_page.dart';
 import 'package:mediaproject/services/auth/auth_service.dart';
 import 'package:mediaproject/services/databases/database_service.dart';
@@ -45,7 +46,6 @@ class _RegisterPageState extends State<RegisterPage> {
     showLoadingCircle(context);
 
     try {
-
       final result = await _auth.signup(
         nameController.text,
         emailController.text,
@@ -54,36 +54,44 @@ class _RegisterPageState extends State<RegisterPage> {
         tweetIdController.text,
       );
 
-      if (result.containsKey('message')) {  // 성공 시
+      if (result.containsKey('message')) {
+        // 1) 로딩 숨기기
+        hideLoadingCircle(context);
+        setState(() {
+          _isLoading = false;
+        });
+
+        // 2) 성공 SnackBar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('✅ ${result['message']}')),
         );
-        Navigator.pushReplacement(
-          context,
+
+        // 3) 로그인 페이지로 교체 이동
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => LoginPage(onTap: widget.onTap), // onTap 전달
+            builder: (_) => HomePage(),
           ),
         );
-        if (mounted) hideLoadingCircle(context);
-
-        //등록 후 유저 프롷필을 DB에 저장
-        // await _db.saveUserInfo(tweetId: tweetId)
+        return;
       }
 
-      else {
-        if (mounted) hideLoadingCircle(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['error'] ?? '회원가입 실패')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류 발생: ${e.toString()}')),
-      );
-    } finally {
+      // 에러 처리
+      hideLoadingCircle(context);
       setState(() {
         _isLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['error'] ?? '회원가입 실패')),
+      );
+
+    } catch (e) {
+      hideLoadingCircle(context);
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('오류 발생: ${e.toString()}')),
+      );
     }
   }
 
