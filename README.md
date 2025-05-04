@@ -1,6 +1,6 @@
 # OshiNavi
 
-This is a application about X(Twitter) JPN-KOR Translation/Auto Reply Generation + Event Calendar using LLM.
+This is an application about X(Twitter) JPN-KOR Translation/Auto Reply Generation + Event Calendar using LLM.
 
 ## Getting Started
 
