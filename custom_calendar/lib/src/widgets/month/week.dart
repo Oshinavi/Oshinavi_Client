@@ -51,7 +51,7 @@ class _WeekState extends State<Week> {
     if (mounted) {
       var weekEvents = getWeekEvents();
       var weekShowedEvents =
-          getShowedWeekEvents(weekEvents, widget.maxEventsShowed);
+      getShowedWeekEvents(weekEvents, widget.maxEventsShowed);
       // no update if no change for current day
       if (listEquals(weekShowedEvents, this.weekShowedEvents) == false) {
         setState(() {
@@ -121,8 +121,8 @@ class _WeekState extends State<Week> {
                         children: [
                           for (var dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++)
                             for (var eventIndex = 0;
-                                eventIndex < weekShowedEvents[dayOfWeek].length;
-                                eventIndex++)
+                            eventIndex < weekShowedEvents[dayOfWeek].length;
+                            eventIndex++)
                               if (eventIndex < widget.maxEventsShowed)
                                 ...getEventOrMoreEventsWidget(
                                     dayOfWeek, eventIndex, dayWidth),
@@ -160,17 +160,17 @@ class _WeekState extends State<Week> {
                 : day.day.toString(),
             isToday: DateUtils.isSameDay(day, DateTime.now()),
             textColor:
-                isStartOfMonth ? colorScheme.onSurface : colorScheme.outline,
+            isStartOfMonth ? colorScheme.onSurface : colorScheme.outline,
           ),
     );
   }
 
   /// get Event widget or "More" widget
   List<Widget> getEventOrMoreEventsWidget(
-    int dayOfWeek,
-    int eventIndex,
-    double dayWidth,
-  ) {
+      int dayOfWeek,
+      int eventIndex,
+      double dayWidth,
+      ) {
     var daySpacing = widget.weekParam.daySpacing;
     var eventSpacing = widget.daysParam.eventSpacing;
     var eventHeight = widget.daysParam.eventHeight;
@@ -188,7 +188,7 @@ class _WeekState extends State<Week> {
           width: dayWidth - daySpacing,
           height: eventHeight,
           child: widget.daysParam.dayMoreEventsBuilder
-                  ?.call(notShowedEventsCount) ??
+              ?.call(notShowedEventsCount) ??
               DefaultNotShowedMonthEventsWidget(
                 context: context,
                 eventHeight: eventHeight,
@@ -205,9 +205,9 @@ class _WeekState extends State<Week> {
       // multi days events duration
       var duration = 1;
       while (weekShowedEvents
-              .getOrNull(dayOfWeek + duration)
-              ?.getOrNull(eventIndex)
-              ?.uniqueId ==
+          .getOrNull(dayOfWeek + duration)
+          ?.getOrNull(eventIndex)
+          ?.uniqueId ==
           event.uniqueId) {
         duration++;
       }
@@ -221,10 +221,10 @@ class _WeekState extends State<Week> {
             width: eventWidth,
             height: eventHeight,
             child: widget.daysParam.dayEventBuilder?.call(
-                  event,
-                  eventWidth,
-                  eventHeight,
-                ) ??
+              event,
+              eventWidth,
+              eventHeight,
+            ) ??
                 DefaultMonthDayEvent(event: event))
       ];
     }

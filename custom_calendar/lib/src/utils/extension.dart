@@ -48,7 +48,7 @@ extension ColorBrightness on Color {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(this);
     final hslLight =
-        hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
     return hslLight.toColor();
   }
 }
@@ -68,5 +68,3 @@ extension SafeAccessExtension<T> on List<T> {
     return null;
   }
 }
-
-

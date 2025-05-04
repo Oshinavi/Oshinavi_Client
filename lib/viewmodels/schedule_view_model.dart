@@ -45,6 +45,7 @@ class ScheduleViewModel extends ChangeNotifier {
         ..clear()
         ..addAll(list);
     });
+    if (_error != null) throw Exception(_error);
   }
 
   /// 새 스케줄 추가
@@ -53,6 +54,7 @@ class ScheduleViewModel extends ChangeNotifier {
       final created = await _api.createSchedule(s);
       _schedules.add(created);
     });
+    if (_error != null) throw Exception(_error);
   }
 
   /// 스케줄 수정
@@ -62,6 +64,7 @@ class ScheduleViewModel extends ChangeNotifier {
       final idx = _schedules.indexWhere((e) => e.id == id);
       if (idx != -1) _schedules[idx] = updated;
     });
+    if (_error != null) throw Exception(_error);
   }
 
   /// 스케줄 삭제
@@ -70,5 +73,6 @@ class ScheduleViewModel extends ChangeNotifier {
       await _api.deleteSchedule(id);
       _schedules.removeWhere((e) => e.id == id);
     });
+    if (_error != null) throw Exception(_error);
   }
 }
