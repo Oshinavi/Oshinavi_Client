@@ -4,94 +4,79 @@ import 'package:http/http.dart' as http;
 import 'package:mediaproject/models/user.dart';
 
 class OshiService {
+  static const _prefix = '/api/users';
   final String baseUrl = 'http://127.0.0.1:5000';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
+  /// 오시 정보 조회
   Future<Map<String, dynamic>> getOshi() async {
-    try {
-      final token = await _storage.read(key: 'jwt_token');
-
-      if (token == null) {
-        return {'error': "로그인이 필요합니다."};
-      }
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/user/oshi'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200) {
-        return {
-          'oshi_tweet_id': responseData['oshi_tweet_id'],
-          'oshi_username': responseData['oshi_username']
-        };
-      } else {
-        return {
-          'error': responseData['error'] ?? "오시 정보를 불러오는 데 실패했습니다."
-        };
-      }
-    } catch (e) {
-      return {'error': "오류가 발생했습니다: $e"};
+    final token = await _storage.read(key: 'jwt_token');
+    if (token == null) {
+      return {'error': "로그인이 필요합니다."};
     }
+
+    final resp = await http.get(
+      Uri.parse('$baseUrl$_prefix/oshi'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final data = json.decode(resp.body);
+    if (resp.statusCode == 200) {
+      return {
+        'oshi_tweet_id': data['oshi_tweet_id'],
+        'oshi_username': data['oshi_username'],
+      };
+    }
+
+    // 백엔드가 한글 에러 메시지를 내려줍니다.
+    return {
+      'error': data['error'] ?? "오시 정보를 불러오는 데 실패했습니다."
+    };
   }
 
-  // 오시 등록 요청
+  /// 오시 등록
   Future<Map<String, dynamic>> registerOshi(String oshiTweetId) async {
-    try {
-      final token = await _storage.read(key: 'jwt_token');
-
-      if (token == null) {
-        return {'error': "로그인이 필요합니다."};
-      }
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/user/oshi'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode({'oshi_tweet_id': oshiTweetId}),
-      );
-
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200) {
-        return {'message': responseData['message']};
-      } else if (response.statusCode == 400 &&
-          responseData['error'] == 'No such user exists') {
-        return {'error': "존재하지 않는 유저입니다."};
-      } else {
-        return {'error': responseData['error'] ?? "요청에 문제가 발생했습니다."};
-      }
-    } catch (e) {
-      return {'error': "오류가 발생했습니다: $e"};
+    final token = await _storage.read(key: 'jwt_token');
+    if (token == null) {
+      return {'error': "로그인이 필요합니다."};
     }
+
+    final resp = await http.post(
+      Uri.parse('$baseUrl$_prefix/oshi'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'oshi_tweet_id': oshiTweetId}),
+    );
+
+    final data = json.decode(resp.body);
+    if (resp.statusCode == 200) {
+      return {'message': data['message']};
+    }
+    // 한글 메시지 기준으로 에러 처리
+    if (resp.statusCode == 404 &&
+        (data['error']?.contains('찾을 수 없습니다') ?? false)) {
+      return {'error': "존재하지 않는 유저입니다."};
+    }
+    return {'error': data['error'] ?? "오시 등록에 문제가 발생했습니다."};
   }
 
+  /// 외부 트위터 유저 프로필 조회
   Future<UserProfile?> getUserProfile(String tweetId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/user?tweet_id=$tweetId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
+    final resp = await http.get(
+      Uri.parse('$baseUrl$_prefix?tweet_id=$tweetId'),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200) {
-        return UserProfile.fromMap(responseData);
-      } else {
-        print('⚠️ 서버 응답 오류: ${responseData['error']}');
-        return null;
-      }
-    } catch (e) {
-      print('❌ 예외 발생: $e');
+    final data = json.decode(resp.body);
+    if (resp.statusCode == 200) {
+      return UserProfile.fromMap(data);
+    } else {
+      print('⚠️ 서버 응답 오류: ${data['error']}');
       return null;
     }
   }
