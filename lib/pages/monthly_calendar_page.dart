@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 
 import '../models/schedule.dart';
 import '../viewmodels/schedule_view_model.dart';
-import '../services/schedule_service.dart';
 
 class MonthlyCalendarPage extends StatefulWidget {
   const MonthlyCalendarPage({Key? key}) : super(key: key);
