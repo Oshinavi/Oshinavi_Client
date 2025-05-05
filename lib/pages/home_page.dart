@@ -3,7 +3,6 @@ import 'package:mediaproject/components/appbardrawer.dart';
 import 'package:mediaproject/components/post_tile.dart';
 import 'package:mediaproject/helper/navigates_pages.dart';
 import 'package:mediaproject/main.dart';
-import 'package:mediaproject/models/post.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/oshi_provider.dart';
 import 'package:provider/provider.dart';
