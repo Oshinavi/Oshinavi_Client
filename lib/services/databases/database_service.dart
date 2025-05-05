@@ -1,107 +1,83 @@
-/*
-
-트윗 정보 관련 기능
-
-- 유저 프로필
-- 메시지 포스팅
-- 좋아요
-- 리플
-- 계정정보
-- 팔로 및 언팔
-- 유저 검색
-
-*/
-
-import 'package:mediaproject/models/post.dart';
-import 'package:mediaproject/models/user.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:mediaproject/models/user.dart';
+import 'package:mediaproject/models/post.dart';
 
 class DatabaseService {
-  // Base URL of your Flask server
-  final String baseUrl = 'http://127.0.0.1:5000'; // Flask API URL
+  // Android 에뮬레이터 ↔ PC 로컬 호스트 매핑
+  final String _baseHost = Platform.isAndroid
+      ? 'http://10.0.2.2:5000'
+      : 'http://127.0.0.1:5000';
+  static const _api = '/api';
 
-  //유저 정보 저장
-  Future<void> saveUserInfo({
-    required String tweetId,
+  /// (1) 회원가입/유저 정보 저장 → 기존 '/api/users/save' 대신 '/api/signup' 호출
+  Future<bool> signup({
     required String username,
+    required String email,
+    required String password,
+    required String cfpassword,
+    required String tweetId,
   }) async {
-    // Create a user profile object
-    final Map<String, dynamic> user = {
-      'tweet_id': tweetId,
+    final uri = Uri.parse('$_baseHost$_api/signup');
+    final body = json.encode({
       'username': username,
-    };
+      'email': email,
+      'password': password,
+      'cfpassword': cfpassword,
+      'tweetId': tweetId,
+    });
 
-    // Send a POST request to save user info
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/user/save'),
+    final resp = await http.post(
+      uri,
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(user),
+      body: body,
     );
-
-    if (response.statusCode == 200) {
-      print('User information saved successfully');
-    } else {
-      print('Failed to save user information');
-    }
+    return resp.statusCode == 201;
   }
 
-  // 백엔드에서 유저 정보 불러오기
+  /// (2) 유저 프로필 조회
   Future<UserProfile?> getUserFromDB(String tweetId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/user?tweet_id=$tweetId'),
-      headers: {'Content-Type': 'application/json'},
-    );
+    final uri = Uri.parse('$_baseHost$_api/users?tweet_id=$tweetId');
+    final resp = await http.get(uri, headers: {
+      'Content-Type': 'application/json',
+    });
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+    if (resp.statusCode != 200) return null;
+    try {
+      final data = json.decode(resp.body);
       return UserProfile.fromMap(data);
-    } else {
-      print('Failed to fetch user data');
+    } catch (_) {
+      // JSON 형식이 아니면 null
       return null;
     }
   }
 
-  //메시지 포스트
-
-  //DB로부터 모든 포스트 가져오기
+  /// (3) 스크린네임으로 트윗 목록 가져오기
   Future<List<Post>> getAllPostFromDB(String screenName) async {
+    final uri = Uri.parse('$_baseHost$_api/tweets/$screenName');
+
+    http.Response resp = await http.get(uri, headers: {
+      'Content-Type': 'application/json',
+    });
+
+    // 500 에러 시 재시도
+    if (resp.statusCode == 500) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      resp = await http.get(uri, headers: {
+        'Content-Type': 'application/json',
+      });
+    }
+
+    if (resp.statusCode != 200) return [];
+
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/tweets/$screenName'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      // 첫 번째 시도 실패 && 500에러일 경우 한 번 더 재시도
-      if (response.statusCode == 500) {
-        print('🔁 백엔드 500에러, 재시도 중...');
-        await Future.delayed(const Duration(milliseconds: 500)); // 잠깐 대기 후 재시도
-        final retryResponse = await http.get(
-          Uri.parse('$baseUrl/api/tweets/$screenName'),
-          headers: {'Content-Type': 'application/json'},
-        );
-
-        if (retryResponse.statusCode == 200) {
-          final List<dynamic> jsonList = json.decode(retryResponse.body);
-          return jsonList.map((item) => Post.fromMap(item)).toList();
-        } else {
-          print('🛑 재시도 후에도 실패: ${retryResponse.statusCode}');
-          return [];
-        }
-      }
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((item) => Post.fromMap(item)).toList();
-      } else {
-        print('Failed to fetch posts: ${response.statusCode}');
-        return [];
-      }
+      final List<dynamic> jsonList = json.decode(resp.body);
+      return jsonList.map((e) => Post.fromMap(e)).toList();
     } catch (e) {
-      print('Exception fetching posts: $e');
+      // 파싱 실패
+      print('❌ JSON 파싱 오류(getAllPost): $e');
       return [];
     }
   }
-
-  //개별 포스트
 }

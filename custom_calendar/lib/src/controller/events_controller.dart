@@ -41,17 +41,17 @@ class EventsController extends ChangeNotifier {
 
   // get events for day with filter applied
   List<Event>? getFilteredDayEvents(
-    DateTime date, {
-    bool returnDayEvents = true,
-    bool returnFullDayEvent = true,
-    bool returnMultiDayEvents = true,
-    bool returnMultiFullDayEvents = true,
-  }) {
+      DateTime date, {
+        bool returnDayEvents = true,
+        bool returnFullDayEvent = true,
+        bool returnMultiDayEvents = true,
+        bool returnMultiFullDayEvents = true,
+      }) {
     var dayEvents = calendarData.dayEvents[date.withoutTime];
     var dayEventsByType = dayEvents
         ?.where((e) => e.isFullDay
-            ? (e.isMultiDay ? returnMultiFullDayEvents : returnFullDayEvent)
-            : (e.isMultiDay ? returnMultiDayEvents : returnDayEvents))
+        ? (e.isMultiDay ? returnMultiFullDayEvents : returnFullDayEvent)
+        : (e.isMultiDay ? returnMultiDayEvents : returnDayEvents))
         .toList();
     return dayEventsFilter.call(date, dayEventsByType);
   }
@@ -74,7 +74,15 @@ class CalendarData {
   /// add all events and cuts up appointments if they are over several days
   void addEvents(List<Event> events) {
     for (var event in events) {
-      var days = event.endTime?.difference(event.startTime).inDays ?? 0;
+      // 이전: 하루(24시간) 기준으로만 계산
+      // var days = event.endTime?.difference(event.startTime).inDays ?? 0;
+
+      // 수정: 날짜 단위(자정 기준)로 계산
+      var days = event.endTime
+          ?.withoutTime
+          .difference(event.startTime.withoutTime)
+          .inDays ??
+          0;
 
       // if event is multi days, dispatch in all events days
       for (int i = 0; i <= days; i++) {
@@ -105,13 +113,13 @@ class CalendarData {
   }
 
   /// replace all day events
-  /// if eventType is entered, replace juste day event type
+  /// if eventType is entered, replace just day event type
   /// not remove multi day event which start another day
   void replaceDayEvents(
-    DateTime day,
-    List<Event> events, [
-    final Object? eventType,
-  ]) {
+      DateTime day,
+      List<Event> events, [
+        final Object? eventType,
+      ]) {
     removeDayEvents(day, eventType);
     addEvents(events);
   }
@@ -135,12 +143,12 @@ class CalendarData {
   }
 
   /// remove all event for day
-  /// if eventType is entered, remove juste day event type
+  /// if eventType is entered, remove just day event type
   /// does not delete multi-day events that do not start on that day
   void removeDayEvents(DateTime day, [final Object? eventType]) {
     var eventsToRemove = dayEvents[day.withoutTime]?.where((e) =>
-            (eventType == null || (e.eventType == eventType)) &&
-            (!e.isMultiDay || e.daysIndex == 0)) ??
+    (eventType == null || (e.eventType == eventType)) &&
+        (!e.isMultiDay || e.daysIndex == 0)) ??
         [];
     for (var event in [...eventsToRemove]) {
       removeEvent(event.copyWith());
@@ -174,14 +182,14 @@ class CalendarData {
     // remove next same event (multi day events)
     var nextDay = event.startTime.withoutTime.add(Duration(days: 1));
     while (
-        dayEvents[nextDay]?.any((e) => e.uniqueId == event.uniqueId) == true) {
+    dayEvents[nextDay]?.any((e) => e.uniqueId == event.uniqueId) == true) {
       dayEvents[nextDay]?.removeWhere((e) => e.uniqueId == event.uniqueId);
       nextDay = nextDay.add(Duration(days: 1));
     }
   }
 
   // clear all data
-  clearAll() {
+  void clearAll() {
     dayEvents.clear();
   }
 }

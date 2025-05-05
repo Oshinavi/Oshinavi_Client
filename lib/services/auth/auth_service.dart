@@ -1,164 +1,138 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
-  final String baseUrl = 'http://127.0.0.1:5000';
+  // Android 에뮬레이터 ↔ localhost 매핑
+  final String _host = Platform.isAndroid
+      ? 'http://10.0.2.2:5000'
+      : 'http://127.0.0.1:5000';
 
-  // JWT 토큰 저장용 변수
+  // 경로 상수
+  static const _loginPath    = '/api/login';
+  static const _signupPath   = '/api/signup';
+  static const _logoutPath   = '/api/logout';
+  static const _tweetIdPath  = '/api/users/tweet_id';
+
   String? _token;
 
-  // 로그인 함수
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final url = Uri.parse('$baseUrl/api/login');
-
+    final uri = Uri.parse('$_host$_loginPath');
     try {
-      final response = await http.post(
-        url,
+      final resp = await http.post(
+        uri,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        _token = responseData['token']; // 토큰 저장
-        final storage = FlutterSecureStorage();
-        await storage.write(key: 'jwt_token', value: _token);
-        print("Token received: $_token"); // 디버그용 출력
-        return responseData;
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        _token = data['token'];
+        await FlutterSecureStorage().write(key: 'jwt_token', value: _token);
+        print('Token received: $_token');
+        return data;
       } else {
         return {'error': '아이디 또는 비밀번호가 일치하지 않습니다.'};
       }
     } catch (e) {
-      return {'error': '네트워크 에러: ${e.toString()}'};
+      return {'error': '네트워크 에러: $e'};
     }
   }
 
-  // 회원가입 함수 + 로그인 자동 수행
-  Future<Map<String, dynamic>> signup(String username, String email,
-      String password, String cfpassword, String tweetId) async {
-    final url = Uri.parse('$baseUrl/api/signup');
-
+  Future<Map<String, dynamic>> signup(
+      String username,
+      String email,
+      String password,
+      String cfpassword,
+      String tweetId) async {
     if (password != cfpassword) {
       return {'error': '입력한 비밀번호가 일치하지 않습니다.'};
     }
 
+    final uri = Uri.parse('$_host$_signupPath');
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
+      final resp = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
           'username': username,
           'email': email,
           'password': password,
           'cfpassword': cfpassword,
-          'tweetId': tweetId,
+          'tweet_id': tweetId,
         }),
       );
 
-      if (response.statusCode == 201) {
-        // 회원가입 성공 시 → 자동 로그인
-        final loginResult = await login(email, password);
-
-        if (loginResult.containsKey('token')) {
-          return {
-            'message': json.decode(response.body)['message'],
-            'token': loginResult['token'],
-          };
-        } else {
-          return {'error': '회원가입 후 로그인 실패'};
-        }
+      if (resp.statusCode == 201) {
+        // 가입 성공 → 자동 로그인
+        return await login(email, password);
       } else {
-        final responseBody = json.decode(response.body);
-        return {'error': responseBody['error']};
+        final err = jsonDecode(resp.body)['error'];
+        return {'error': err ?? '회원가입에 실패했습니다.'};
       }
     } catch (e) {
-      return {'error': 'Network error: ${e.toString()}'};
+      return {'error': '네트워크 에러: $e'};
     }
   }
 
-  // 로그아웃 함수
   Future<Map<String, dynamic>> logout() async {
-    final url = Uri.parse('$baseUrl/api/logout');
-
-    if (_token == null) {
-      final storage = FlutterSecureStorage();
-      _token = await storage.read(key: 'jwt_token');
-    }
-
-    if (_token == null) {
-      return {'error': '로그인된 사용자가 아닙니다.'};
-    }
-
-    print('Sending logout request to: $url');
-    print('Authorization: Bearer $_token');
-
     final storage = FlutterSecureStorage();
+    _token ??= await storage.read(key: 'jwt_token');
+
+    if (_token == null) {
+      return {'error': '로그인이 필요합니다.'};
+    }
+
+    final uri = Uri.parse('$_host$_logoutPath');
     try {
-      final response = await http.post(
-        url,
+      final resp = await http.post(
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_token',
         },
       );
-
-      print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
       _token = null;
       await storage.delete(key: 'jwt_token');
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else if (response.statusCode == 401) {
-        return {'message': '이미 세션이 만료되었습니다. 로그아웃 처리되었습니다.'};
+      if (resp.statusCode == 200) {
+        return jsonDecode(resp.body);
       } else {
-        return {'error': '로그아웃 실패 (${response.statusCode})'};
+        return {'error': '로그아웃 실패 (${resp.statusCode})'};
       }
     } catch (e) {
-      print('Error: ${e.toString()}');
       _token = null;
       await storage.delete(key: 'jwt_token');
-      return {'error': '네트워크 오류: ${e.toString()}'};
+      return {'error': '네트워크 에러: $e'};
     }
   }
 
-  Future<String?> getCurrentTweetid() async {
-    final url = Uri.parse('$baseUrl/api/user/tweet_id');
-
+  Future<String?> getCurrentTweetId() async {
     final storage = FlutterSecureStorage();
     final token = await storage.read(key: 'jwt_token');
-
     if (token == null) {
-      print("JWT 토큰이 없습니다.");
+      print("JWT 토큰 없음");
       return null;
     }
 
+    final uri = Uri.parse('$_host$_tweetIdPath');
     try {
-      final response = await http.get(
-        url,
+      final resp = await http.get(
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
-
-      final data = json.decode(response.body);
-
-      print("응답 본문: ${response.body}");
-      print("응답 코드: ${response.statusCode}");
-
-      if (response.statusCode == 200) {
-        return data['tweetId'];
+      final body = jsonDecode(resp.body);
+      if (resp.statusCode == 200) {
+        return body['tweetId'] as String?;
       } else {
-        print("오류: ${data['error']}");
+        print('Error ${resp.statusCode}: ${body['error']}');
         return null;
       }
     } catch (e) {
-      print("네트워크 오류: $e");
+      print("네트워크 에러: $e");
       return null;
     }
   }

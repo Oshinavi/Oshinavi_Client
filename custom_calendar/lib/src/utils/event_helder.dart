@@ -6,9 +6,9 @@ import '../utils/extension.dart';
 
 /// find event must be showed, and place multi day event in same row
 List<List<Event?>> getShowedWeekEvents(
-  List<List<Event>?> weekEvents,
-  int maxEventsShowed,
-) {
+    List<List<Event>?> weekEvents,
+    int maxEventsShowed,
+    ) {
   var sortedMultiDayEvents = getWeekMultiDaysEventsSortedMap(weekEvents);
 
   // place no multi days events to show
@@ -60,7 +60,7 @@ SplayTreeMap<UniqueKey, Map<int, Event>> getWeekMultiDaysEventsSortedMap(
   // sort multi days events
   final sortedMultiDayEvents = SplayTreeMap<UniqueKey, Map<int, Event>>.from(
     multiDaysEventsMap,
-    (a, b) {
+        (a, b) {
       var eventA = multiDaysEventsMap[a]!.values.first;
       var eventB = multiDaysEventsMap[b]!.values.first;
       return eventA.startTime.compareTo(

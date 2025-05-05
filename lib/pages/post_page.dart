@@ -1,19 +1,9 @@
-/*
-
-POST PAGE
-
-This page displays:
-
-- individual post
-
-*/
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:mediaproject/components/post_tile.dart';
 import 'package:mediaproject/helper/navigates_pages.dart';
 import 'package:mediaproject/models/post.dart';
 import 'package:mediaproject/services/oshi_provider.dart';
-import 'package:intl/intl.dart';
 
 class PostPage extends StatefulWidget {
   final Post post;
@@ -36,53 +26,40 @@ class _PostPageState extends State<PostPage> {
   @override
   void initState() {
     super.initState();
-    _loadOshiUserId();
+    _loadOshi();
   }
 
-  Future<void> _loadOshiUserId() async {
-    final oshi = await widget.oshiProvider.getOshi();
+  Future<void> _loadOshi() async {
+    final info = await widget.oshiProvider.getOshi();
     setState(() {
-      _oshiUserId = oshi['oshi_tweet_id'];
+      _oshiUserId = info['oshi_tweet_id'] as String?;
       _isLoading = false;
     });
   }
-  // BUILD UI
+
   @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat('yyyy년 MM월 dd일 HH:mm').format(widget.post.date);
-    // SCAFFOLD
+    final post = widget.post;
+    final formattedDate = DateFormat('yyyy.MM.dd HH:mm').format(post.date);
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-
-      // App Bar
       appBar: AppBar(
-        title: Align(
-          alignment: Alignment.centerLeft, // 왼쪽 정렬
-          child: Text(
-            "포스트",
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.inversePrimary,
-            ),
-          ),
-        ),
-        foregroundColor: Theme.of(context).colorScheme.primary,
+        title: const Text("포스트"),
+        foregroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-
-      // Body
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
         children: [
           PostTile(
-            post: widget.post,
-            onUserTap: () => goUserPage(context, widget.post.username),
+            post: post,
+            onUserTap: () => goUserPage(context, post.uid),
             onPostTap: null,
             oshiProvider: widget.oshiProvider,
             onPostPage: true,
-            oshiUserId: _oshiUserId ?? '',
+            oshiUserId: _oshiUserId,
           ),
-
-          // Comments on this post
         ],
       ),
     );

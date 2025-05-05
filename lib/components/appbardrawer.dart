@@ -90,7 +90,7 @@ class AppBarDrawer extends StatelessWidget {
                 icon: Icons.person,
                 onTap: () async {
                   Navigator.pop(context);
-                  String? tweetId = await _auth.getCurrentTweetid();
+                  String? tweetId = await _auth.getCurrentTweetId();
                   if (tweetId != null) {
                     Navigator.push(
                       context,
