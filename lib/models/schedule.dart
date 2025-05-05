@@ -1,5 +1,3 @@
-// lib/models/schedule.dart
-
 class Schedule {
   /// サーバー側で自動採番される予定 ID
   final int id;
@@ -19,8 +17,8 @@ class Schedule {
   /// 説明
   final String description;
 
-  /// 関連する Twitter 内部 ID  ← 실제로는 스크린네임을 담고 있습니다
-  final String relatedTwitterInternalId;
+  /// 관련 트위터 스크린네임 (서버→클라이언트 시에는 null 가능)
+  final String? relatedTwitterInternalId;
 
   /// 作成者のユーザー ID
   final int createdByUserId;
@@ -32,7 +30,7 @@ class Schedule {
     required this.startAt,
     required this.endAt,
     required this.description,
-    required this.relatedTwitterInternalId,
+    this.relatedTwitterInternalId,
     required this.createdByUserId,
   });
 
@@ -45,7 +43,8 @@ class Schedule {
       startAt: DateTime.parse(json['start_at'] as String),
       endAt: DateTime.parse(json['end_at'] as String),
       description: json['description'] as String,
-      relatedTwitterInternalId: json['related_twitter_internal_id'] as String,
+      // null 가능성을 고려
+      relatedTwitterInternalId: json['related_twitter_screen_name'] as String?,
       createdByUserId: json['created_by_user_id'] as int,
     );
   }
@@ -59,9 +58,8 @@ class Schedule {
       'start_at': startAt.toIso8601String(),
       'end_at': endAt.toIso8601String(),
       'description': description,
-      // ← 여기를 수정: internal_id가 아니라 screen_name으로 보냅니다
+      // 서버가 기대하는 필드명에 맞춰 screen_name을 보냄
       'related_twitter_screen_name': relatedTwitterInternalId,
-      // id や createdByUserId はサーバー側で管理されるので、POST/PUT のボディには含めない想定です
     };
   }
 }

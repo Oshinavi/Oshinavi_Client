@@ -21,7 +21,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
   bool _isInitialized = false;
   bool _isLoading = false;
   String? _oshiTweetId;
-  String? _oshiUsername;
 
   @override
   void didChangeDependencies() {
@@ -30,8 +29,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
     if (!_isInitialized) {
       databaseProvider = Provider.of<DatabaseProvider>(context, listen: false);
-      oshiProvider = Provider.of<OshiProvider>(context, listen: false);
-      loadOshiPosts();
+      oshiProvider     = Provider.of<OshiProvider>(context, listen: false);
+      _loadOshiAndPosts();
       _isInitialized = true;
     }
   }
@@ -44,30 +43,20 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   void didPopNext() {
-    if (!_isLoading) {
-      loadOshiPosts();
-    }
+    if (!_isLoading) _loadOshiAndPosts();
   }
 
-  Future<void> loadOshiPosts() async {
+  Future<void> _loadOshiAndPosts() async {
     if (_isLoading) return;
     _isLoading = true;
-
     try {
-      final oshiInfo = await oshiProvider.getOshi();
-      print("📦 받은 오시 정보: $oshiInfo");
-      _oshiTweetId = oshiInfo['oshi_tweet_id'];
-      _oshiUsername = oshiInfo['oshi_username'];
-
-      if (_oshiTweetId != null && _oshiTweetId is String) {
-        print("📨 오시 트윗 ID로 포스트 요청: $_oshiTweetId");
+      final info = await oshiProvider.getOshi();
+      _oshiTweetId = info['oshi_tweet_id'] as String?;
+      if (_oshiTweetId != null) {
         await databaseProvider.loadAllPosts(_oshiTweetId!);
-        print("📥 로드된 포스트 수: ${databaseProvider.allPosts.length}");
-      } else {
-        print("⚠️ 오시 정보가 없거나 잘못되었습니다: $oshiInfo");
       }
     } catch (e) {
-      print("❌ 오류 발생: $e");
+      print("❌ 오시 포스트 로드 오류: $e");
     } finally {
       _isLoading = false;
     }
@@ -75,42 +64,38 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final listeningProvider = Provider.of<DatabaseProvider>(context);
+    final posts = context.watch<DatabaseProvider>().allPosts;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      drawer: AppBarDrawer(),
+      drawer: AppBarDrawer(),  // const 제거
       appBar: AppBar(
         title: const Text("홈"),
         foregroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: _buildPostList(listeningProvider.allPosts),
-    );
-  }
-
-  Widget _buildPostList(List<Post> posts) {
-    return posts.isEmpty
-        ? const Center(child: Text("트윗이 없습니다..."))
-        : ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: posts.length,
-      itemBuilder: (context, index) {
-        final post = posts[index];
-        return PostTile(
-          post: post,
-          onUserTap: () => goUserPage(context, post.uid),
-          onPostTap: () => goPostPage(context, post),
-          oshiProvider: oshiProvider,
-          onPostPage: false,
-          oshiUserId: _oshiTweetId,
-        );
-      },
-      separatorBuilder: (context, index) => Divider(
-        height: 1,
-        thickness: 0.5,
-        indent: 16,
-        endIndent: 16,
-        color: Theme.of(context).dividerColor.withOpacity(0.3),
+      body: posts.isEmpty
+          ? const Center(child: Text("트윗이 없습니다..."))
+          : ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        itemCount: posts.length,
+        itemBuilder: (ctx, i) {
+          final post = posts[i];
+          return PostTile(
+            post: post,
+            onUserTap: () => goUserPage(context, post.uid),
+            onPostTap: () => goPostPage(context, post),
+            oshiProvider: oshiProvider,
+            onPostPage: false,
+            oshiUserId: _oshiTweetId,
+          );
+        },
+        separatorBuilder: (_, __) => Divider(
+          height: 1,
+          thickness: 0.5,
+          indent: 16,
+          endIndent: 16,
+          color: Theme.of(context).dividerColor.withOpacity(0.3),
+        ),
       ),
     );
   }

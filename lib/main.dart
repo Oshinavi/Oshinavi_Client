@@ -9,21 +9,23 @@ import 'services/oshi_provider.dart';
 import 'package:mediaproject/viewmodels/schedule_view_model.dart';
 import 'package:mediaproject/services/schedule_service.dart';
 
-
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+/// 전역으로 사용할 RouteObserver 선언
+final RouteObserver<ModalRoute<void>> routeObserver =
+RouteObserver<ModalRoute<void>>();
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
-        // theme provider
-        ChangeNotifierProvider(create: (context) => ThemeProvider()),
-        // database provider
-        ChangeNotifierProvider(create: (context) => DatabaseProvider()),
+        // 테마
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        // 로컬 DB provider
+        ChangeNotifierProvider(create: (_) => DatabaseProvider()),
+        // 오시(provider)
         ChangeNotifierProvider(create: (_) => OshiProvider()),
+        // 트윗 자동 리플라이 provider
         ChangeNotifierProvider(create: (_) => TweetProvider()),
-
-        // ScheduleViewModel
+        // 스케줄 뷰모델
         ChangeNotifierProvider(
           create: (_) => ScheduleViewModel(api: ScheduleService()),
         ),
@@ -41,22 +43,18 @@ class MyApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
-      navigatorObservers: [routeObserver],
+      navigatorObservers: [routeObserver],       // RouteObserver 연결
       debugShowCheckedModeBanner: false,
-
-      // ↓↓↓ 로컬라이제이션 추가 ↓↓↓
-      localizationsDelegates: const [
+      localizationsDelegates: const [            // 한글 로컬라이제이션
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('ko', 'KR'), // 한국어
-        Locale('en', 'US'), // 영어
+        Locale('ko', 'KR'),
+        Locale('en', 'US'),
       ],
       locale: const Locale('ko', 'KR'),
-      // ↑↑↑ 로컬라이제이션 추가 ↑↑↑
-
       theme: themeProvider.themeData,
       home: const AuthGate(),
     );
