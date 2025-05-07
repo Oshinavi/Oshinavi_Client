@@ -2,11 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:custom_calendar/custom_calendar.dart';
-import 'package:custom_calendar/src/utils/extension.dart'; // withoutTime 확장
+import 'package:custom_calendar/src/utils/extension.dart';
 import 'package:intl/intl.dart';
 
 import '../models/schedule.dart';
 import '../viewmodels/schedule_view_model.dart';
+import '../utils/color_generator.dart';
 
 class MonthlyCalendarPage extends StatefulWidget {
   const MonthlyCalendarPage({Key? key}) : super(key: key);
@@ -18,18 +19,19 @@ class MonthlyCalendarPage extends StatefulWidget {
 class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
   final EventsController _controller = EventsController();
   final _calendarKey = GlobalKey<CustomEventsMonthsState>();
+  final ColorGenerator _colorGenerator = ColorGenerator();
   DateTime _currentMonth = DateTime.now();
+  bool _colorReady = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _colorGenerator.init();
+      setState(() => _colorReady = true);
       context.read<ScheduleViewModel>().loadSchedules();
     });
   }
-
-  Color _randomColor() =>
-      Colors.primaries[Random().nextInt(Colors.primaries.length)].shade400;
 
   void _goPrev() {
     final prev = DateTime(_currentMonth.year, _currentMonth.month - 1);
@@ -43,9 +45,7 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
     setState(() => _currentMonth = next);
   }
 
-  /// 공통 date/time 필드 빌더
-  Widget _buildDateTimeField(
-      String label, DateTime? value, VoidCallback onTap) {
+  Widget _buildDateTimeField(String label, DateTime? value, VoidCallback onTap) {
     final text = value == null ? '' : DateFormat('yyyy.MM.dd HH:mm').format(value);
     return TextField(
       readOnly: true,
@@ -63,8 +63,7 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
     DateTime? endAt;
 
     const categories = [
-      '일반', '방송', '라디오', '라이브',
-      '음반', '굿즈', '영상', '게임',
+      '일반', '방송', '라디오', '라이브', '음반', '굿즈', '영상', '게임',
     ];
     String selectedCategory = categories.first;
 
@@ -76,46 +75,23 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
             title: const Text('새 이벤트 추가'),
             content: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: '제목'),
-                ),
+                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '제목')),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: selectedCategory,
                   decoration: const InputDecoration(labelText: '카테고리'),
-                  items: categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => selectedCategory = v);
-                  },
+                  items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (v) => setState(() => selectedCategory = v!),
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: twtCtrl,
-                  decoration: const InputDecoration(
-                      labelText: '관련 트위터 스크린네임'),
-                ),
+                TextField(controller: twtCtrl, decoration: const InputDecoration(labelText: '관련 트위터 스크린네임')),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: descCtrl,
-                  decoration: const InputDecoration(labelText: '설명'),
-                  maxLines: 2,
-                ),
+                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '설명'), maxLines: 2),
                 const SizedBox(height: 12),
                 _buildDateTimeField('시작 일시', startAt, () async {
-                  final d = await showDatePicker(
-                    context: ctx,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
+                  final d = await showDatePicker(context: ctx, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
                   if (d == null) return;
-                  final t = await showTimePicker(
-                    context: ctx,
-                    initialTime: TimeOfDay.now(),
-                  );
+                  final t = await showTimePicker(context: ctx, initialTime: TimeOfDay.now());
                   if (t == null) return;
                   setState(() {
                     startAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
@@ -124,21 +100,9 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
                 }),
                 const SizedBox(height: 8),
                 _buildDateTimeField('종료 일시', endAt, () async {
-                  final d = await showDatePicker(
-                    context: ctx,
-                    initialDate: startAt ?? DateTime.now(),
-                    firstDate: startAt ?? DateTime.now(),
-                    lastDate: DateTime(2100),
-                  );
+                  final d = await showDatePicker(context: ctx, initialDate: startAt ?? DateTime.now(), firstDate: startAt ?? DateTime.now(), lastDate: DateTime(2100));
                   if (d == null) return;
-                  final t = await showTimePicker(
-                    context: ctx,
-                    initialTime: startAt != null
-                        ? TimeOfDay(
-                        hour: (startAt!.hour + 1) % 24,
-                        minute: startAt!.minute)
-                        : TimeOfDay.now(),
-                  );
+                  final t = await showTimePicker(context: ctx, initialTime: TimeOfDay.now());
                   if (t == null) return;
                   setState(() {
                     endAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
@@ -148,10 +112,7 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-              TextButton(onPressed: () {
-                if (titleCtrl.text.isEmpty || startAt == null || endAt == null) return;
-                Navigator.pop(ctx, true);
-              }, child: const Text('추가')),
+              TextButton(onPressed: () => Navigator.pop(ctx, titleCtrl.text.isEmpty || startAt == null || endAt == null ? false : true), child: const Text('추가')),
             ],
           );
         });
@@ -172,13 +133,9 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
 
     try {
       await context.read<ScheduleViewModel>().addSchedule(newSched);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('일정이 추가되었습니다.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('일정이 추가되었습니다.')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('추가 실패: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('추가 실패: $e')));
     }
   }
 
@@ -188,10 +145,8 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
     final twtCtrl = TextEditingController(text: s.relatedTwitterInternalId);
     DateTime startAt = s.startAt;
     DateTime endAt = s.endAt;
-    const categories = [
-      '일반', '방송', '라디오', '라이브',
-      '음반', '굿즈', '영상', '게임',
-    ];
+
+    const categories = ['일반', '방송', '라디오', '라이브', '음반', '굿즈', '영상', '게임'];
     String selectedCategory = s.category;
 
     final ok = await showDialog<bool>(
@@ -202,49 +157,37 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
             title: const Text('이벤트 수정'),
             content: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: '제목'),
-                ),
+                TextField(controller: titleCtrl,
+                    decoration: const InputDecoration(labelText: '제목')),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: selectedCategory,
                   decoration: const InputDecoration(labelText: '카테고리'),
-                  items: categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => selectedCategory = v);
-                  },
+                  items: categories.map((c) =>
+                      DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (v) => setState(() => selectedCategory = v!),
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: twtCtrl,
-                  decoration: const InputDecoration(
-                      labelText: '관련 트위터 스크린네임'),
-                ),
+                TextField(controller: twtCtrl,
+                    decoration: const InputDecoration(
+                        labelText: '관련 트위터 스크린네임')),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: descCtrl,
-                  decoration: const InputDecoration(labelText: '설명'),
-                  maxLines: 2,
-                ),
+                TextField(controller: descCtrl,
+                    decoration: const InputDecoration(labelText: '설명'),
+                    maxLines: 2),
                 const SizedBox(height: 12),
                 _buildDateTimeField('시작 일시', startAt, () async {
-                  final d = await showDatePicker(
-                    context: ctx,
-                    initialDate: startAt,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
+                  final d = await showDatePicker(context: ctx,
+                      initialDate: startAt,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100));
                   if (d == null) return;
-                  final t = await showTimePicker(
-                    context: ctx,
-                    initialTime: TimeOfDay.fromDateTime(startAt),
-                  );
+                  final t = await showTimePicker(context: ctx,
+                      initialTime: TimeOfDay.fromDateTime(startAt));
                   if (t == null) return;
                   setState(() {
-                    startAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+                    startAt =
+                        DateTime(d.year, d.month, d.day, t.hour, t.minute);
                     if (endAt.isBefore(startAt)) {
                       endAt = startAt.add(const Duration(hours: 1));
                     }
@@ -252,17 +195,13 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
                 }),
                 const SizedBox(height: 8),
                 _buildDateTimeField('종료 일시', endAt, () async {
-                  final d = await showDatePicker(
-                    context: ctx,
-                    initialDate: endAt,
-                    firstDate: startAt,
-                    lastDate: DateTime(2100),
-                  );
+                  final d = await showDatePicker(context: ctx,
+                      initialDate: endAt,
+                      firstDate: startAt,
+                      lastDate: DateTime(2100));
                   if (d == null) return;
                   final t = await showTimePicker(
-                    context: ctx,
-                    initialTime: TimeOfDay.fromDateTime(endAt),
-                  );
+                      context: ctx, initialTime: TimeOfDay.fromDateTime(endAt));
                   if (t == null) return;
                   setState(() {
                     endAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
@@ -271,20 +210,19 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
               ]),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-              TextButton(onPressed: () {
-                if (titleCtrl.text.isEmpty) return;
-                Navigator.pop(ctx, true);
-              }, child: const Text('저장')),
+              TextButton(onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('취소')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('저장')),
             ],
           );
         });
       },
     );
+
     if (ok != true) return;
 
-    // 변경된 필드만 모아서
-    final changes = <String, dynamic>{
+    final changes = {
       'title': titleCtrl.text,
       'category': selectedCategory,
       'start_at': startAt.toIso8601String(),
@@ -295,13 +233,9 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
 
     try {
       await context.read<ScheduleViewModel>().updateSchedule(s.id, changes);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('일정이 수정되었습니다.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('일정이 수정되었습니다.')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('수정 실패: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('수정 실패: $e')));
     }
   }
 
@@ -311,13 +245,8 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
       builder: (ctx) => AlertDialog(
         title: const Text('정말 삭제하시겠습니까?'),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('취소')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('삭제',
-                  style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -325,13 +254,9 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
 
     try {
       await context.read<ScheduleViewModel>().deleteSchedule(id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('일정이 삭제되었습니다.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('일정이 삭제되었습니다.')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('삭제 실패: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
     }
   }
 
@@ -341,35 +266,38 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(s.title ?? ''),
+        title: Text(s.title),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('카테고리: ${s.category}'),
-            Text('관련 트위터: ${s.relatedTwitterInternalId}'),
+            Text('관련 트위터: ${s.relatedTwitterInternalId ?? '-'}'),
             Text('시작: ${DateFormat('yyyy.MM.dd HH:mm').format(s.startAt)}'),
             Text('종료: ${DateFormat('yyyy.MM.dd HH:mm').format(s.endAt)}'),
             const SizedBox(height: 8),
-            Text(s.description ?? ''),
+            Text(s.description),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _onEdit(s);
+              _onEdit(s); // 이미 존재하는 함수
             },
             child: const Text('수정'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _confirmDelete(s.id);
+              _confirmDelete(s.id); // 이미 존재하는 함수
             },
             child: const Text('삭제', style: TextStyle(color: Colors.red)),
           ),
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('닫기')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('닫기'),
+          ),
         ],
       ),
     );
@@ -396,7 +324,9 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
         onPressed: _onAdd,
         child: const Icon(Icons.add),
       ),
-      body: Consumer<ScheduleViewModel>(
+      body: !_colorReady
+          ? const Center(child: CircularProgressIndicator())
+          : Consumer<ScheduleViewModel>(
         builder: (ctx, vm, _) {
           if (vm.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -408,24 +338,30 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
               );
             });
           }
-          // 컨트롤러에 이벤트 반영
+
           final events = vm.schedules.map((s) {
+            final key = '${s.relatedTwitterInternalId}_${s.id}'; // 고유성 확보
+            final color = _colorGenerator.getColor(key);
             return Event(
               startTime: s.startAt,
               endTime: s.endAt,
               title: s.title,
               description: s.description,
-              color: _randomColor(),
+              color: color,
               data: s,
             );
           }).toList();
+
           _controller.updateCalendarData((cal) {
             cal.clearAll();
             cal.addEvents(events);
           });
+
           return CustomEventsMonths(
             key: _calendarKey,
             controller: _controller,
+            automaticAdjustScrollToStartOfMonth: true,
+            onMonthChange: (m) => setState(() => _currentMonth = m),
             weekParam: WeekParam(
               startOfWeekDay: 7,
               headerDayBuilder: (dow) {
@@ -438,22 +374,37 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
                 return Center(child: Text(labels[dow]!, style: TextStyle(color: color, fontWeight: FontWeight.bold)));
               },
             ),
-            automaticAdjustScrollToStartOfMonth: true,
-            onMonthChange: (m) => setState(() => _currentMonth = m),
             daysParam: DaysParam(
+              dayHeaderBuilder: (date) {
+                final isInCurrentMonth = date.month == _currentMonth.month;
+                final isToday = DateUtils.isSameDay(date, DateTime.now());
+
+                return DefaultMonthDayHeader(
+                  text: date.day.toString(),
+                  isToday: isToday,
+                  textColor: isInCurrentMonth
+                      ? null // 현재 월이면 기본 색상
+                      : Theme.of(context).disabledColor, // 그 외는 회색 처리
+                  todayTextColor: Theme.of(context).colorScheme.onPrimary,
+                  todayBackgroundColor: Theme.of(context).colorScheme.primary,
+                );
+              },
               dayEventBuilder: (event, w, h) {
                 final idx = event.daysIndex ?? 0;
                 final totalDays = ((event.effectiveEndTime ?? event.endTime)!
                     .difference(event.effectiveStartTime ?? event.startTime)
-                    .inDays) + 1;
+                    .inDays) +
+                    1;
                 final segStartDate = (event.effectiveStartTime ?? event.startTime)
-                    .withoutTime.add(Duration(days: idx));
+                    .withoutTime
+                    .add(Duration(days: idx));
                 final wd0 = segStartDate.weekday % 7;
                 final remain = 7 - wd0;
                 final spanThisWeek = min(totalDays - idx, remain);
                 if (spanThisWeek <= 0) return const SizedBox.shrink();
                 final width = (w ?? 0) * spanThisWeek;
                 final height = h ?? 0;
+
                 return GestureDetector(
                   onTap: () => _onEventTap(event),
                   behavior: HitTestBehavior.opaque,
@@ -466,13 +417,19 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         alignment: Alignment.centerLeft,
                         decoration: BoxDecoration(
-                          color: event.color,
+                          color: event.color, // 전체 배경에 색상 적용
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           event.title ?? '',
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: event.textColor, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: event.textColor.computeLuminance() < 0.4
+                                ? Colors.white
+                                : Colors.black,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),

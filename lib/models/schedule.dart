@@ -43,14 +43,12 @@ class Schedule {
       startAt: DateTime.parse(json['start_at'] as String),
       endAt: DateTime.parse(json['end_at'] as String),
       description: json['description'] as String,
-      // null 가능성을 고려
       relatedTwitterInternalId: json['related_twitter_screen_name'] as String?,
       createdByUserId: json['created_by_user_id'] as int,
     );
   }
 
   /// Schedule → JSON
-  /// （PUT や POST のボディに使うとき。バックエンドの期待するキー名に合わせます）
   Map<String, dynamic> toJson() {
     return {
       'title': title,
@@ -58,8 +56,31 @@ class Schedule {
       'start_at': startAt.toIso8601String(),
       'end_at': endAt.toIso8601String(),
       'description': description,
-      // 서버가 기대하는 필드명에 맞춰 screen_name을 보냄
       'related_twitter_screen_name': relatedTwitterInternalId,
     };
+  }
+
+  /// 필드 일부만 변경하여 새로운 Schedule 객체 생성
+  Schedule copyWith({
+    int? id,
+    String? title,
+    String? category,
+    DateTime? startAt,
+    DateTime? endAt,
+    String? description,
+    String? relatedTwitterInternalId,
+    int? createdByUserId,
+  }) {
+    return Schedule(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      startAt: startAt ?? this.startAt,
+      endAt: endAt ?? this.endAt,
+      description: description ?? this.description,
+      relatedTwitterInternalId:
+      relatedTwitterInternalId ?? this.relatedTwitterInternalId,
+      createdByUserId: createdByUserId ?? this.createdByUserId,
+    );
   }
 }

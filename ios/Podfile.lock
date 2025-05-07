@@ -12,12 +12,16 @@ PODS:
   - flutter_secure_storage (3.3.1):
     - Flutter
   - OrderedSet (5.0.0)
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - charset_converter (from `.symlinks/plugins/charset_converter/ios`)
   - Flutter (from `Flutter`)
   - flutter_inappwebview (from `.symlinks/plugins/flutter_inappwebview/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -32,6 +36,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_inappwebview/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
 
 SPEC CHECKSUMS:
   charset_converter: 82bc1d2e3c70dcb51bf769e9772e3ae5b2571695
@@ -39,6 +45,7 @@ SPEC CHECKSUMS:
   flutter_inappwebview: 180a2f38c18dfbfb8f0c12f7bd42ce02dfd6c765
   flutter_secure_storage: 50035aef357c5a8bdd67fd6bc81370d46efc4d16
   OrderedSet: aaeb196f7fef5a9edf55d89760da9176ad40b93c
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
 
 PODFILE CHECKSUM: 4305caec6b40dde0ae97be1573c53de1882a07e5
 
