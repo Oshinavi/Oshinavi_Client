@@ -1,17 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:mediaproject/models/user.dart';
 import 'package:mediaproject/models/post.dart';
+import 'package:mediaproject/constants/api_config.dart';
 
 class DatabaseService {
-  // Android 에뮬레이터 ↔ PC 로컬 호스트 매핑
-  final String _baseHost = Platform.isAndroid
-      ? 'http://10.0.2.2:5000'
-      : 'http://127.0.0.1:5000';
-  static const _api = '/api';
-
-  /// (1) 회원가입/유저 정보 저장 → 기존 '/api/users/save' 대신 '/api/signup' 호출
+  // --------------------------------------------------------------------------
+  // 회원가입
+  // --------------------------------------------------------------------------
   Future<bool> signup({
     required String username,
     required String email,
@@ -19,63 +15,67 @@ class DatabaseService {
     required String cfpassword,
     required String tweetId,
   }) async {
-    final uri = Uri.parse('$_baseHost$_api/signup');
-    final body = json.encode({
-      'username': username,
-      'email': email,
-      'password': password,
-      'cfpassword': cfpassword,
-      'tweetId': tweetId,
-    });
+    final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/auth/signup');
 
     final resp = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
-      body: body,
+      body: json.encode({
+        'username':   username,
+        'email':      email,
+        'password':   password,
+        'cfpassword': cfpassword,
+        'tweet_id':   tweetId,
+      }),
     );
     return resp.statusCode == 201;
   }
 
-  /// (2) 유저 프로필 조회
+  // --------------------------------------------------------------------------
+  // 외부 트위터 유저 프로필 조회
+  // --------------------------------------------------------------------------
   Future<UserProfile?> getUserFromDB(String tweetId) async {
-    final uri = Uri.parse('$_baseHost$_api/users?tweet_id=$tweetId');
-    final resp = await http.get(uri, headers: {
-      'Content-Type': 'application/json',
-    });
+    final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/users/profile?tweet_id=$tweetId');
+    final resp = await http.get(uri, headers: {'Content-Type': 'application/json'});
 
-    if (resp.statusCode != 200) return null;
-    try {
-      final data = json.decode(resp.body);
+    // ① 여기에 추가 ── 백엔드가 보내 준 JSON 그대로 보기
+    print('RAW JSON ▶ ${utf8.decode(resp.bodyBytes)}');
+
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(
+          utf8.decode(resp.bodyBytes)            // ✅
+      );
       return UserProfile.fromMap(data);
-    } catch (_) {
-      // JSON 형식이 아니면 null
-      return null;
     }
+    return null;
   }
 
-  /// (3) 스크린네임으로 트윗 목록 가져오기
+  // --------------------------------------------------------------------------
+  // 특정 스크린네임의 최근 트윗 목록 조회
+  // --------------------------------------------------------------------------
   Future<List<Post>> getAllPostFromDB(String screenName) async {
-    final uri = Uri.parse('$_baseHost$_api/tweets/$screenName');
+    final uri = Uri.parse(
+        '${ApiConfig.host}${ApiConfig.api}/tweets/$screenName');
 
-    http.Response resp = await http.get(uri, headers: {
-      'Content-Type': 'application/json',
-    });
+    // 간헐적 500 대응
+    Future<http.Response> _attempt() => http.get(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+    );
 
-    // 500 에러 시 재시도
+    var resp = await _attempt();
     if (resp.statusCode == 500) {
       await Future.delayed(const Duration(milliseconds: 300));
-      resp = await http.get(uri, headers: {
-        'Content-Type': 'application/json',
-      });
+      resp = await _attempt();
     }
-
     if (resp.statusCode != 200) return [];
 
     try {
-      final List<dynamic> jsonList = json.decode(resp.body);
+      final List<dynamic> jsonList = jsonDecode(
+          utf8.decode(resp.bodyBytes)
+      );
       return jsonList.map((e) => Post.fromMap(e)).toList();
     } catch (e) {
-      // 파싱 실패
       print('❌ JSON 파싱 오류(getAllPost): $e');
       return [];
     }

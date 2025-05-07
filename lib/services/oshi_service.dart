@@ -2,82 +2,78 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:mediaproject/models/user.dart';
+import 'package:mediaproject/constants/api_config.dart';
 
 class OshiService {
-  static const _prefix = '/api/users';
-  final String baseUrl = 'http://127.0.0.1:5000';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  /// 오시 정보 조회
+  // ==========================================================================
+  // 1. 오시 정보 조회  (GET /users/me/oshi)
+  // ==========================================================================
   Future<Map<String, dynamic>> getOshi() async {
     final token = await _storage.read(key: 'jwt_token');
-    if (token == null) {
-      return {'error': "로그인이 필요합니다."};
-    }
+    if (token == null) return {'error': "로그인이 필요합니다."};
 
     final resp = await http.get(
-      Uri.parse('$baseUrl$_prefix/oshi'),
+      Uri.parse('${ApiConfig.host}${ApiConfig.api}/users/me/oshi'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
     );
 
-    final data = json.decode(resp.body);
+    final data = jsonDecode(utf8.decode(resp.bodyBytes));
     if (resp.statusCode == 200) {
       return {
-        'oshi_tweet_id': data['oshi_tweet_id'],
-        'oshi_username': data['oshi_username'],
+        'oshi_tweet_id': data['oshi_screen_name'] as String,
+        'oshi_username': data['oshi_username']   as String,
       };
     }
-
-    // 백엔드가 한글 에러 메시지를 내려줍니다.
-    return {
-      'error': data['error'] ?? "오시 정보를 불러오는 데 실패했습니다."
-    };
+    return {'error': data['detail'] ?? "오시 정보를 불러오는 데 실패했습니다."};
   }
 
-  /// 오시 등록
-  Future<Map<String, dynamic>> registerOshi(String oshiTweetId) async {
+  // ==========================================================================
+  // 2. 오시 등록/변경  (PUT /users/me/oshi)
+  // ==========================================================================
+  Future<Map<String, dynamic>> registerOshi(String screenName) async {
     final token = await _storage.read(key: 'jwt_token');
-    if (token == null) {
-      return {'error': "로그인이 필요합니다."};
-    }
+    if (token == null) return {'error': "로그인이 필요합니다."};
 
-    final resp = await http.post(
-      Uri.parse('$baseUrl$_prefix/oshi'),
+    final resp = await http.put(
+      Uri.parse('${ApiConfig.host}${ApiConfig.api}/users/me/oshi'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: json.encode({'oshi_tweet_id': oshiTweetId}),
+      body: json.encode({'screen_name': screenName}),
     );
 
-    final data = json.decode(resp.body);
+    final data = jsonDecode(
+        utf8.decode(resp.bodyBytes)      // ← 바이트 → UTF-8 String
+    );
     if (resp.statusCode == 200) {
-      return {'message': data['message']};
+      return {'message': "오시가 ${data['oshi_screen_name']} 으로 설정되었습니다."};
     }
-    // 한글 메시지 기준으로 에러 처리
+
     if (resp.statusCode == 404 &&
-        (data['error']?.contains('찾을 수 없습니다') ?? false)) {
-      return {'error': "존재하지 않는 유저입니다."};
+        (data['detail']?.contains('찾을 수 없습니다') ?? false)) {
+      return {'error': "존재하지 않는 트위터 유저입니다."};
     }
-    return {'error': data['error'] ?? "오시 등록에 문제가 발생했습니다."};
+    return {'error': data['detail'] ?? "오시 등록에 문제가 발생했습니다."};
   }
 
-  /// 외부 트위터 유저 프로필 조회
+  // ==========================================================================
+  // 3. 외부 트위터 유저 프로필 조회
+  // ==========================================================================
   Future<UserProfile?> getUserProfile(String tweetId) async {
-    final resp = await http.get(
-      Uri.parse('$baseUrl$_prefix?tweet_id=$tweetId'),
-      headers: {'Content-Type': 'application/json'},
-    );
+    final uri = Uri.parse(
+        '${ApiConfig.host}${ApiConfig.api}/users/profile?tweet_id=$tweetId');
 
-    final data = json.decode(resp.body);
-    if (resp.statusCode == 200) {
-      return UserProfile.fromMap(data);
-    } else {
-      print('⚠️ 서버 응답 오류: ${data['error']}');
+    final resp = await http.get(uri, headers: {'Content-Type': 'application/json'});
+    if (resp.statusCode != 200) {
+      print('⚠️ 서버 응답 오류: ${resp.body}');
       return null;
     }
+    return UserProfile.fromMap(jsonDecode(utf8.decode(resp.bodyBytes)));
   }
 }

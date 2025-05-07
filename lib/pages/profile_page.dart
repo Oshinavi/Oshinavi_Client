@@ -63,6 +63,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // ✅ 핵심 수정
           children: [
             // 배너와 프로필 이미지
             Stack(
@@ -112,33 +113,43 @@ class _ProfilePageState extends State<ProfilePage> {
 
             const SizedBox(height: 60),
 
-            // 유저 정보
+            // 유저 정보 블록
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start, // ✅ 내부 정렬도 좌측 정렬로 고정
                 children: [
+                  const SizedBox(height: 8),
+
+                  // 이름
                   Text(
                     user!.username,
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onBackground,
                     ),
                   ),
-                  const SizedBox(height: 4),
+
+                  const SizedBox(height: 2),
+
+                  // 스크린네임
                   Text(
                     '@${user!.tweetId}',
                     style: TextStyle(
                       fontSize: 15,
-                      color: theme.colorScheme.onSurface.withOpacity(0.65),
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  BioBox(text: user!.bio),
+
+                  const SizedBox(height: 16),
+
+                  // 바이오
+                  if (user!.bio != null && user!.bio!.isNotEmpty)
+                    BioBox(text: user!.bio!),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
