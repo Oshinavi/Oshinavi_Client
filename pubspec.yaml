@@ -50,6 +50,12 @@ dependencies:
    path: ./custom_calendar
   sticky_infinite_list_plus: ^4.0.2+2
   shared_preferences: ^2.2.2
+  dio: ^5.8.0+1
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.2.0
+  flutter_linkify: ^6.0.0
+  url_launcher: ^6.1.7
+
 
 dev_dependencies:
   flutter_test:

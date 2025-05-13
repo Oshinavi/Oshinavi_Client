@@ -1,41 +1,45 @@
 import 'package:flutter/material.dart';
 
-/*
-
-드로어 타일
-
-사용을 위해
-- title()
-- icon()
-- function()
-위 셋을 반드시 정의할 것.
-
-*/
-
+/// Drawer 에서 쓰이는 일종의 메뉴 아이템 위젯.
+/// 기본으로는 Theme.of(context).colorScheme 을 사용하고,
+/// 필요하면 호출부에서 스타일을 override 할 수 있도록 확장했습니다.
 class AppBarDrawerTile extends StatelessWidget {
   final String title;
   final IconData icon;
-  final void Function()? onTap;
+  final VoidCallback onTap;
+
+  /// 선택적 스타일링 파라미터
+  final TextStyle? textStyle;
+  final Color? iconColor;
 
   const AppBarDrawerTile({
     super.key,
     required this.title,
     required this.icon,
     required this.onTap,
-});
+    this.textStyle,
+    this.iconColor,
+  });
 
-  //UI 빌드
   @override
   Widget build(BuildContext context) {
-    //List Tile
+    final cs = Theme.of(context).colorScheme;
     return ListTile(
-      title: Text(
-          title,
-          style: TextStyle(color: Theme.of(context).colorScheme.inversePrimary)),
       leading: Icon(
         icon,
-        color: Theme.of(context).colorScheme.primary,),
+        color: iconColor ?? cs.primary,
+      ),
+      title: Text(
+        title,
+        style: textStyle ??
+            TextStyle(
+              color: cs.onSurface,     // 기본 텍스트 컬러
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+      ),
       onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
     );
   }
 }

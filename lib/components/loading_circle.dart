@@ -13,6 +13,8 @@ void showLoadingCircle(BuildContext context){
 }
 
 //로딩 서클 숨기기
-void hideLoadingCircle(BuildContext context){
-  Navigator.pop(context);
+void hideLoadingCircle(BuildContext context) {
+  if (Navigator.of(context).canPop()) {
+    Navigator.of(context).pop();
+  }
 }

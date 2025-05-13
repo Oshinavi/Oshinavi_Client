@@ -15,93 +15,70 @@ To use this widget, you need:
 */
 
 class InputAlertBox extends StatelessWidget {
-
   final TextEditingController textController;
   final String hintText;
-  final void Function()? onPressed;
+  final VoidCallback onPressed;
   final String onPressedText;
+
   const InputAlertBox({
     super.key,
     required this.textController,
     required this.hintText,
     required this.onPressed,
-    required this.onPressedText
+    required this.onPressedText,
   });
 
-  //Build UI
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
 
-    //Alert Dialog
     return AlertDialog(
-      // Curve corners
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
-
-      //Color
-      backgroundColor: Theme.of(context).colorScheme.surface,
-
-      //Textfield (user types here)
+      backgroundColor: cs.surface,
       content: TextField(
         controller: textController,
-
-        //limiting max characters
         maxLength: 280,
-
         decoration: InputDecoration(
-          //border when textfield is unselected
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.tertiary),
-            borderRadius: BorderRadius.circular(12),
-          ),
-
-          //border when textfield is selected
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-             borderRadius: BorderRadius.circular(12),
-          ),
-
-          //hint text
-          hintText: hintText,
-          hintStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-
-          // Color inside of textfield
-          fillColor: Theme.of(context).colorScheme.secondary,
           filled: true,
-
-          //counter style
-          counterStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+          fillColor: cs.secondary,
+          hintText: hintText,
+          hintStyle: TextStyle(color: cs.onSecondary),
+          counterStyle: TextStyle(color: cs.onSecondary),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: cs.onSecondary),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: cs.primary, width: 2),
+          ),
         ),
       ),
-
-      //Buttons
       actions: [
-        // cancel button
-        TextButton(onPressed: () {
-          //close box
-          Navigator.pop(context);
-
-          //clear controller
-          textController.clear();
-        },
-            child: const Text("취소"),
-        ),
-
-        //yes button
         TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: cs.onSecondary,
+          ),
           onPressed: () {
-            //close box
             Navigator.pop(context);
-
-            //execute function
-            onPressed!();
-
-            //clear controller
             textController.clear();
-            },
-            child: Text("onPressedText"),
-        )
+          },
+          child: const Text('취소'),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: cs.primary,
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+            onPressed();
+            textController.clear();
+          },
+          child: Text(onPressedText),
+        ),
       ],
     );
   }

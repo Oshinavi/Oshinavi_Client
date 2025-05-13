@@ -1,43 +1,72 @@
-import 'package:flutter/cupertino.dart';
+// lib/pages/settings_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:mediaproject/components/setting_tile.dart';
 import 'package:mediaproject/themes/theme_provider.dart';
 import 'package:provider/provider.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-/*
+  const SettingsPage({Key? key}) : super(key: key);
 
-다크모드 설정
-계정 설정
-
- */
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text("환경설정"),
-         foregroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 0,
+        iconTheme: IconThemeData(color: theme.colorScheme.primary),
+        title: Text(
+          '환경설정',
+          style: theme.textTheme.titleLarge
+              ?.copyWith(color: theme.colorScheme.onSurface),
+        ),
       ),
-
-      body: Column(
+      body: ListView(
         children: [
-          //다크모드 설정
-          SettingsTile(
-            title: "다크모드 설정",
-            action: CupertinoSwitch(
-              value: Provider.of<ThemeProvider>(context, listen: true).isDarkMode,
-              onChanged: (value) {
-                Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
-              },
+          // 섹션 헤더
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: Text(
+              'GENERAL',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                fontWeight: FontWeight.bold,
+              ),
             ),
+          ),
 
-
-          )
+          // 다크모드 설정 타일
+          Container(
+            color: theme.colorScheme.surface,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.brightness_6_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                  title: Text(
+                    '다크모드 설정',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(color: theme.colorScheme.onSurface),
+                  ),
+                  trailing: Switch(
+                    value: themeProvider.isDarkMode,
+                    activeColor: theme.colorScheme.primary,
+                    onChanged: (_) => themeProvider.toggleTheme(),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  horizontalTitleGap: 0,
+                ),
+                const Divider(indent: 16, endIndent: 16, height: 1),
+              ],
+            ),
+          ),
         ],
-      )
+      ),
     );
   }
 }

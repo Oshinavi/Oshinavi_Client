@@ -24,27 +24,27 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //컨테이너
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        //색상
-        color: Theme.of(context).colorScheme.secondary,
-        //모서리 처리
+        color: cs.secondary,
         borderRadius: BorderRadius.circular(12),
       ),
-      //패딩처리
-      margin: const EdgeInsets.only(left: 25, right: 25, top: 10),
-      padding: const EdgeInsets.all(25),
-
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          //타이틀
-          Text(
-            title,
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: cs.onSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
           ),
-          //액션
           action,
         ],
       ),

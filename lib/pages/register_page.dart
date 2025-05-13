@@ -38,7 +38,28 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _signUp() async {
     setState(() => _isLoading = true);
 
-    // 1) 비밀번호 최소 길이 검증
+    // 0) 이름 필수 입력 검증
+    final name = nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ 이름을 입력하세요.')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    // 1) 이메일 형식 검증
+    final email = emailController.text.trim();
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ 유효한 이메일 주소를 입력하세요.')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    // 2) 비밀번호 최소 길이 검증
     if (pwController.text.length < 6 || confirmPwController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('❌ 비밀번호는 최소 6자 이상이어야 합니다.')),
@@ -46,7 +67,7 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() => _isLoading = false);
       return;
     }
-    // 2) 비밀번호 일치 검증
+    // 3) 비밀번호 일치 검증
     if (pwController.text != confirmPwController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('❌ 비밀번호가 일치하지 않습니다.')),
@@ -58,11 +79,11 @@ class _RegisterPageState extends State<RegisterPage> {
     showLoadingCircle(context);
     try {
       final result = await _auth.signup(
-        nameController.text.trim(),
-        emailController.text.trim(),
-        pwController.text,
-        confirmPwController.text,
-        tweetIdController.text.trim(),
+        username:   name,
+        email:      email,
+        password:   pwController.text,
+        cfpassword: confirmPwController.text,
+        tweetId:    tweetIdController.text.trim(),
       );
       hideLoadingCircle(context);
       setState(() => _isLoading = false);

@@ -13,32 +13,32 @@ import 'package:flutter/material.dart';
 
 class SimpleButton extends StatelessWidget {
   final String text;
-  final void Function()? onTap;
+  final VoidCallback? onTap;
+
   const SimpleButton({
     super.key,
     required this.text,
-  required this.onTap,});
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(25),
-        decoration: BoxDecoration(
-          //버튼 색
-          color: Theme.of(context).colorScheme.secondary,
-          borderRadius: BorderRadius.circular(12),
+    final cs = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          shape: const StadiumBorder(),
+          elevation: 2,
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        child: Center(
-            child: Text(text,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      )
+        child: Text(text),
+      ),
     );
   }
 }

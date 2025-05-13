@@ -21,31 +21,37 @@ class TextFieldLogin extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
-    required this. obscureText,
+    required this.obscureText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      decoration: InputDecoration(
-        //선택되지 않았을 때의 border
+    final cs = Theme.of(context).colorScheme;
 
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.tertiary),
-          borderRadius: BorderRadius.circular(12),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        style: TextStyle(color: cs.onSurface),
+        cursorColor: cs.primary,
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.5)),
+          filled: true,
+          fillColor: cs.surface,            // 배경은 surface
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20, vertical: 16,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(32.0),
+            borderSide: BorderSide(color: cs.onSurface.withOpacity(0.2), width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(32.0),
+            borderSide: BorderSide(color: cs.primary, width: 2),
+          ),
         ),
-        //선택되었을 때의 border
-        focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-    borderRadius: BorderRadius.circular(12),
-        ),
-        fillColor: Theme.of(context).colorScheme.secondary,
-        filled: true,
-        hintText: hintText,
-        hintStyle: TextStyle(
-            color: Theme.of(context).colorScheme.primary),
       ),
     );
   }

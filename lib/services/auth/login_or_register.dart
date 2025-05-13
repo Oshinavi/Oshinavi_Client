@@ -10,10 +10,9 @@ class LoginOrRegister extends StatefulWidget {
 }
 
 class _LoginOrRegisterState extends State<LoginOrRegister> {
-  // 초기엔 로그인 페이지 보여주기
+  // true → 로그인, false → 회원가입
   bool showLoginPage = true;
 
-  // 로그인/등록 페이지 토글
   void togglePages() {
     setState(() {
       showLoginPage = !showLoginPage;
@@ -22,15 +21,8 @@ class _LoginOrRegisterState extends State<LoginOrRegister> {
 
   @override
   Widget build(BuildContext context) {
-    if (showLoginPage) {
-      return LoginPage(
-        onTap: togglePages,
-      );
-    }
-    else {
-      return RegisterPage(
-        onTap: togglePages,
-      );
-    }
+    return showLoginPage
+        ? LoginPage(onTap: togglePages)
+        : RegisterPage(onTap: togglePages);
   }
 }
