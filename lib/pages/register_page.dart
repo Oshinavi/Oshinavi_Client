@@ -22,6 +22,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController pwController        = TextEditingController();
   final TextEditingController confirmPwController = TextEditingController();
   final TextEditingController tweetIdController   = TextEditingController();
+  final TextEditingController ct0Controller         = TextEditingController();
+  final TextEditingController authTokenController   = TextEditingController();
 
   bool _isLoading = false;
 
@@ -32,6 +34,8 @@ class _RegisterPageState extends State<RegisterPage> {
     pwController.dispose();
     confirmPwController.dispose();
     tweetIdController.dispose();
+    ct0Controller.dispose();
+    authTokenController.dispose();
     super.dispose();
   }
 
@@ -76,6 +80,24 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    final ct0 = ct0Controller.text.trim();
+    if (ct0.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ ct0 값을 입력하세요.')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final authToken = authTokenController.text.trim();
+    if (authToken.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ auth_token 값을 입력하세요.')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
     showLoadingCircle(context);
     try {
       final result = await _auth.signup(
@@ -84,6 +106,8 @@ class _RegisterPageState extends State<RegisterPage> {
         password:   pwController.text,
         cfpassword: confirmPwController.text,
         tweetId:    tweetIdController.text.trim(),
+        ct0:        ct0,
+        authToken:  authToken,
       );
       hideLoadingCircle(context);
       setState(() => _isLoading = false);
@@ -183,6 +207,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 TextFieldLogin(controller: confirmPwController, hintText: "비밀번호 확인",                    obscureText: true),
                 const SizedBox(height: 10),
                 TextFieldLogin(controller: tweetIdController,   hintText: "트위터 id(@ 제외)를 입력하세요", obscureText: false),
+                const SizedBox(height: 10),
+                TextFieldLogin(
+                  controller: ct0Controller,
+                  hintText: "ct0 값을 입력하세요",
+                  obscureText: false,
+                ),
+                const SizedBox(height: 10),
+                TextFieldLogin(
+                  controller: authTokenController,
+                  hintText: "auth_token 값을 입력하세요",
+                  obscureText: true,
+                ),
                 const SizedBox(height: 25),
 
                 SimpleButton(

@@ -20,7 +20,7 @@ class DioClient {
 
   DioClient._internal()
       : _dio = Dio(BaseOptions(
-    baseUrl: 'http://localhost:8000/',  // ← 여러분 백엔드 주소
+    baseUrl: 'http://localhost:8000',  // ← 여기서는 /api 를 붙이지 않습니다
     connectTimeout: const Duration(milliseconds: 5000),
     receiveTimeout: const Duration(milliseconds: 3000),
     contentType: 'application/json',
@@ -42,22 +42,13 @@ class DioClient {
             // 로컬 토큰 삭제
             await _storage.delete(key: 'jwt_token');
             await _storage.delete(key: 'refresh_token');
-            // 로그인 화면으로 이동
-            navigatorKey.currentState?.pushAndRemoveUntil(
+            // 히스토리 무시하고 로그인 화면으로 대체
+            navigatorKey.currentState?.pushReplacement(
               MaterialPageRoute(builder: (_) => const AuthGate()),
-                  (route) => false,
             );
           }
-          // 기존 에러 래핑
-          final msg = e.response?.statusMessage ?? e.message;
-          return handler.reject(
-            DioException(
-              requestOptions: e.requestOptions,
-              error: ApiException("통신 오류: $msg"),
-              response: e.response,
-              type: e.type,
-            ),
-          );
+          // 원래 에러 흐름 계속
+          return handler.next(e);
         },
       ),
     );
@@ -65,9 +56,13 @@ class DioClient {
 
   Dio get dio => _dio;
 
-  Future<Response> request(String path, { Options? options, dynamic data }) async {
+  Future<Response> request(
+      String path, {
+        Options? options,
+        dynamic data,
+      }) async {
     final resp = await _dio.request(path, data: data, options: options);
-    if (resp.statusCode != 200) {
+    if (resp.statusCode != 200 && resp.statusCode != 201) {
       throw ApiException("서버 오류: ${resp.statusCode}");
     }
     return resp;

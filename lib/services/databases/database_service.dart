@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mediaproject/models/user.dart';
 import 'package:mediaproject/models/post.dart';
 import 'package:mediaproject/constants/api_config.dart';
 
 class DatabaseService {
+  final _storage = const FlutterSecureStorage();
+
   // --------------------------------------------------------------------------
-  // 회원가입
+  // 회원가입 (변경 없음)
   // --------------------------------------------------------------------------
   Future<bool> signup({
     required String username,
@@ -32,48 +35,53 @@ class DatabaseService {
   }
 
   // --------------------------------------------------------------------------
-  // 외부 트위터 유저 프로필 조회
+  // 외부 트위터 유저 프로필 조회 (변경 없음)
   // --------------------------------------------------------------------------
   Future<UserProfile?> getUserFromDB(String tweetId) async {
     final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/users/profile?tweet_id=$tweetId');
     final resp = await http.get(uri, headers: {'Content-Type': 'application/json'});
 
-    // ① 여기에 추가 ── 백엔드가 보내 준 JSON 그대로 보기
+    // 디버깅용 RAW JSON 출력
     print('RAW JSON ▶ ${utf8.decode(resp.bodyBytes)}');
 
     if (resp.statusCode == 200) {
-      final data = jsonDecode(
-          utf8.decode(resp.bodyBytes)            // ✅
-      );
+      final data = jsonDecode(utf8.decode(resp.bodyBytes));
       return UserProfile.fromMap(data);
     }
     return null;
   }
 
   // --------------------------------------------------------------------------
-  // 특정 스크린네임의 최근 트윗 목록 조회
+  // 특정 스크린네임의 최근 트윗 목록 조회 (Authorization 헤더 추가)
   // --------------------------------------------------------------------------
   Future<List<Post>> getAllPostFromDB(String screenName) async {
-    final uri = Uri.parse(
-        '${ApiConfig.host}${ApiConfig.api}/tweets/$screenName');
+    // 1) 저장된 JWT 토큰 읽기
+    final token = await _storage.read(key: 'jwt_token');
 
-    // 간헐적 500 대응
-    Future<http.Response> _attempt() => http.get(
-      uri,
-      headers: {'Content-Type': 'application/json'},
+    final uri = Uri.parse(
+      '${ApiConfig.host}${ApiConfig.api}/tweets/$screenName',
     );
 
+    // 2) 헤더 구성 (토큰이 있으면 Authorization 포함)
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+
+    // 3) 간헐적 500 대응
+    Future<http.Response> _attempt() => http.get(uri, headers: headers);
     var resp = await _attempt();
     if (resp.statusCode == 500) {
       await Future.delayed(const Duration(milliseconds: 300));
       resp = await _attempt();
     }
+
+    // 4) 200 이외면 빈 리스트
     if (resp.statusCode != 200) return [];
 
+    // 5) JSON → List<Post>
     try {
-      final List<dynamic> jsonList = jsonDecode(
-          utf8.decode(resp.bodyBytes)
-      );
+      final List<dynamic> jsonList = jsonDecode(utf8.decode(resp.bodyBytes));
       return jsonList.map((e) => Post.fromMap(e)).toList();
     } catch (e) {
       print('❌ JSON 파싱 오류(getAllPost): $e');

@@ -39,8 +39,7 @@ class _PostTileState extends State<PostTile> {
   final TextEditingController _replyController = TextEditingController();
   int _replyByteCount = 0;
   bool _isLoadingAutoReply = false;
-
-  // 원문/번역 토글 플래그
+  bool _isSendingReply = false;
   bool _showOriginal = false;
 
   void _updateLength(String text) {
@@ -82,6 +81,7 @@ class _PostTileState extends State<PostTile> {
       _showDialog("エラー", "文字数が多すぎます（最大280文字）");
       return;
     }
+    setState(() => _isSendingReply = true);
     try {
       final tweetProvider = Provider.of<TweetProvider>(context, listen: false);
       final success = await tweetProvider.sendReply(
@@ -101,6 +101,8 @@ class _PostTileState extends State<PostTile> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("리플라이 전송 중 오류: ${e.toString()}")),
       );
+    } finally {
+      setState(() => _isSendingReply = false);
     }
   }
 
@@ -117,7 +119,6 @@ class _PostTileState extends State<PostTile> {
     );
   }
 
-  /// 링크 클릭 시 외부 브라우저로 열기
   Future<void> _onOpen(LinkableElement link) async {
     final uri = Uri.parse(link.url);
     if (await canLaunchUrl(uri)) {
@@ -125,7 +126,6 @@ class _PostTileState extends State<PostTile> {
     }
   }
 
-  /// 일정 추출 팝업
   Future<void> _onExtractSchedule() async {
     final sd = widget.post.includedStartDate;
     final ed = widget.post.includedEndDate;
@@ -276,6 +276,8 @@ class _PostTileState extends State<PostTile> {
     final theme = Theme.of(context);
     final post = widget.post;
     final avatarUrl = post.profileImageUrl?.replaceAll('_normal', '_400x400');
+    final primary = theme.colorScheme.primary;
+    final onPrimary = theme.colorScheme.onPrimary;
 
     return GestureDetector(
       onTap: widget.onPostTap,
@@ -289,7 +291,7 @@ class _PostTileState extends State<PostTile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 사용자 정보 + 옵션 버튼
+            // 사용자 정보 + 옵션
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -316,7 +318,7 @@ class _PostTileState extends State<PostTile> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,  // 사용자명은 onSurface 사용
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -338,10 +340,9 @@ class _PostTileState extends State<PostTile> {
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
 
-            // 번역된 텍스트 또는 원문 (토글)
+            // 본문 / 번역
             Linkify(
               text: _showOriginal ? post.message : post.translatedMessage,
               onOpen: _onOpen,
@@ -356,7 +357,6 @@ class _PostTileState extends State<PostTile> {
               ),
             ),
 
-            // 상세 페이지 전용 UI
             if (widget.onPostPage) ...[
               const SizedBox(height: 12),
               Text(
@@ -387,23 +387,45 @@ class _PostTileState extends State<PostTile> {
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
-                  Row(children: [
-                    ElevatedButton(
-                      onPressed: _isLoadingAutoReply ? null : _handleAutoReply,
-                      child: _isLoadingAutoReply
-                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text("자동생성"),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _handleReplySubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
+                  Row(
+                    children: [
+                      // 자동생성 버튼
+                      ElevatedButton(
+                        onPressed: _isLoadingAutoReply || _isSendingReply ? null : _handleAutoReply,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: onPrimary,
+                        ),
+                        child: _isLoadingAutoReply
+                            ? SizedBox(
+                          width: 14, height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(onPrimary),
+                          ),
+                        )
+                            : const Text("자동생성"),
                       ),
-                      child: const Text("전송"),
-                    ),
-                  ]),
+                      const SizedBox(width: 8),
+                      // 전송 버튼
+                      ElevatedButton(
+                        onPressed: _isLoadingAutoReply || _isSendingReply ? null : _handleReplySubmit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: onPrimary,
+                        ),
+                        child: _isSendingReply
+                            ? SizedBox(
+                          width: 14, height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(onPrimary),
+                          ),
+                        )
+                            : const Text("전송"),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

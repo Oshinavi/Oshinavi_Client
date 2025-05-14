@@ -24,6 +24,8 @@ class AuthService {
     required String password,
     required String cfpassword,
     required String tweetId,
+    required String ct0,
+    required String authToken,
   }) async {
     try {
       final resp = await _dio.post(_signupPath, data: {
@@ -32,6 +34,8 @@ class AuthService {
         'password': password,
         'cfpassword': cfpassword,
         'tweet_id': tweetId,
+        'ct0': ct0,
+        'auth_token' : authToken,
       });
 
       if (resp.statusCode == 201) {
