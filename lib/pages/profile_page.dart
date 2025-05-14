@@ -34,7 +34,11 @@ class _ProfilePageState extends State<ProfilePage> {
     final theme = Theme.of(context);
 
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+          body: Center(
+              child: CircularProgressIndicator()
+          )
+      );
     }
 
     if (user == null) {
@@ -63,7 +67,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // ✅ 핵심 수정
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 배너와 프로필 이미지
             Stack(
@@ -78,10 +82,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     user!.userProfileBannerUrl!,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      color: theme.colorScheme.surfaceVariant,
+                      color: theme.colorScheme.surfaceContainerHighest,
                     ),
                   )
-                      : Container(color: theme.colorScheme.surfaceVariant),
+                      : Container(color: theme.colorScheme.surfaceContainerHighest),
                 ),
 
                 // 프로필 이미지
@@ -93,7 +97,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withAlpha(51),
                           blurRadius: 8,
                         )
                       ],
@@ -117,7 +121,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, // ✅ 내부 정렬도 좌측 정렬로 고정
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
 
@@ -127,7 +131,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onBackground,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
 
@@ -138,7 +142,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     '@${user!.tweetId}',
                     style: TextStyle(
                       fontSize: 15,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withAlpha(153),
                     ),
                   ),
 

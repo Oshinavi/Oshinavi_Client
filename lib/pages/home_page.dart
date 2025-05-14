@@ -1,4 +1,3 @@
-// lib/pages/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mediaproject/main.dart';
@@ -110,7 +109,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
         child: Text(
           "트윗이 없습니다...",
           style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+              ?.copyWith(
+              color: theme.colorScheme.onSurface.withAlpha(153)
+          ),
         ),
       );
     }
@@ -134,7 +135,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
         thickness: 0.5,
         indent: 16,
         endIndent: 16,
-        color: theme.dividerColor.withOpacity(0.3),
+        color: theme.dividerColor.withAlpha(77),
       ),
     );
   }

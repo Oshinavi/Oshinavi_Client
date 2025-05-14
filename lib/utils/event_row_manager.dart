@@ -14,7 +14,7 @@ class EventRowManager {
   int assignRow(Event event) {
     final DateTime? start = event.effectiveStartTime ?? event.startTime;
     final DateTime? end = event.effectiveEndTime ?? event.endTime;
-    if (start == null || end == null) return 0; // ✅ null 방어 처리
+    if (start == null || end == null) return 0; // null 방어 처리
 
     DateTime currentWeek = _weekStart(start);
     int maxRow = 0;

@@ -1,5 +1,3 @@
-// lib/components/post_tile.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:characters/characters.dart';
@@ -78,7 +76,7 @@ class _PostTileState extends State<PostTile> {
   Future<void> _handleReplySubmit() async {
     final replyText = _replyController.text.trim();
     if (_replyByteCount > 280) {
-      _showDialog("エラー", "文字数が多すぎます（最大280文字）");
+      _showDialog("에러", "글자수가 너무 많습니다（최대 280자）");
       return;
     }
     setState(() => _isSendingReply = true);
@@ -145,7 +143,7 @@ class _PostTileState extends State<PostTile> {
       '음반', '굿즈', '영상', '게임',
     ];
     String selectedCategory = categories.contains(widget.post.tweetAbout)
-        ? widget.post.tweetAbout! : categories.first;
+        ? widget.post.tweetAbout : categories.first;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -285,7 +283,7 @@ class _PostTileState extends State<PostTile> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.secondary.withOpacity(0.05),
+          color: theme.colorScheme.secondary.withAlpha(13),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -300,7 +298,7 @@ class _PostTileState extends State<PostTile> {
                   child: CircleAvatar(
                     radius: 22,
                     backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                    backgroundColor: theme.colorScheme.surfaceVariant,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                     child: avatarUrl == null
                         ? Icon(Icons.person, color: theme.colorScheme.primary)
                         : null,
@@ -326,7 +324,7 @@ class _PostTileState extends State<PostTile> {
                           '@${widget.oshiUserId ?? post.uid}',
                           style: TextStyle(
                             fontSize: 14,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withAlpha(153),
                           ),
                         ),
                       ],
@@ -363,7 +361,7 @@ class _PostTileState extends State<PostTile> {
                 DateFormat('yyyy.MM.dd HH:mm').format(post.date),
                 style: TextStyle(
                   fontSize: 13.5,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withAlpha(153),
                 ),
               ),
               const Divider(height: 32),
@@ -384,7 +382,7 @@ class _PostTileState extends State<PostTile> {
                     "입력 가능한 문자수: ${280 - _replyByteCount}",
                     style: TextStyle(
                       fontSize: 12,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withAlpha(153),
                     ),
                   ),
                   Row(

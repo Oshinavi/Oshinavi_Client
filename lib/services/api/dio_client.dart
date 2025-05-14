@@ -20,11 +20,12 @@ class DioClient {
 
   DioClient._internal()
       : _dio = Dio(BaseOptions(
-    baseUrl: 'http://localhost:8000',  // ← 여기서는 /api 를 붙이지 않습니다
+    baseUrl: 'http://localhost:8000',
     connectTimeout: const Duration(milliseconds: 5000),
     receiveTimeout: const Duration(milliseconds: 3000),
     contentType: 'application/json',
   )) {
+
     // 로깅 인터셉터
     _dio.interceptors.add(LogInterceptor(
       request: true,

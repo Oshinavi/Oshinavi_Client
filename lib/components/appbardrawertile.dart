@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Drawer 에서 쓰이는 일종의 메뉴 아이템 위젯.
 /// 기본으로는 Theme.of(context).colorScheme 을 사용하고,
-/// 필요하면 호출부에서 스타일을 override 할 수 있도록 확장했습니다.
+/// 필요하면 호출부에서 스타일을 override 할 수 있도록 확장
 class AppBarDrawerTile extends StatelessWidget {
   final String title;
   final IconData icon;

@@ -38,45 +38,54 @@ class _OshiRegisterPageState extends State<OshiRegisterPage> {
   }
 
   void showRegisterDialog() {
-    final outerContext = context; // Scaffold 및 Navigator 접근용
-
     showDialog(
       context: context,
-      builder: (context) => InputAlertBox(
-        textController: _inputController,
-        hintText: "예: myoshi_123",
-        onPressedText: "등록",
-        onPressed: () async {
-          final inputId = _inputController.text.trim();
-          if (inputId.isEmpty) return;
+      builder: (dialogContext) {
+        return InputAlertBox(
+          textController: _inputController,
+          hintText: "예: Hayama_Fuka",
+          onPressedText: "등록",
+          onPressed: () async {
+            final inputId = _inputController.text.trim();
+            if (inputId.isEmpty) return;
 
-          showLoadingCircle(outerContext); // ← 외부 context 사용
+            // dialogContext 에서 ScaffoldMessenger / Navigator / HideLoader를 미리 캡처
+            final messenger = ScaffoldMessenger.of(dialogContext);
+            final navigator = Navigator.of(dialogContext);
+            final hideLoader = () => navigator.pop();
 
-          final service = OshiService();
-          final result = await service.registerOshi(inputId);
+            // 로딩 표시
+            showLoadingCircle(dialogContext);
 
-          hideLoadingCircle(outerContext); // ← 외부 context 사용
+            // 실제 등록 호출
+            final result = await OshiService().registerOshi(inputId);
 
-          if (result.containsKey("error")) {
-            if (mounted) {
-              Future.delayed(Duration.zero, () {
-                ScaffoldMessenger.of(outerContext).showSnackBar(
-                  const SnackBar(content: Text("존재하지 않는 ID입니다. 다시 한 번 확인해 주세요")),
-                );
+            // 로딩 해제
+            hideLoader();
+
+            if (!mounted) return;
+            if (result.containsKey("error")) {
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text("존재하지 않는 ID입니다. 다시 한 번 확인해 주세요"),
+                ),
+              );
+            } else {
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text("오시 등록에 성공했어요!"),
+                ),
+              );
+              // 대화상자 닫기
+              navigator.pop();
+              // 화면 업데이트
+              setState(() {
+                oshiId = inputId;
               });
             }
-          } else {
-            if (mounted) {
-              Future.delayed(Duration.zero, () {
-                ScaffoldMessenger.of(outerContext).showSnackBar(
-                  const SnackBar(content: Text("최애 등록에 성공했어요!")),
-                );
-                Navigator.pop(outerContext); // ← 외부 context 사용
-              });
-            }
-          }
-        },
-      ),
+          },
+        );
+      },
     );
   }
 

@@ -109,6 +109,8 @@ class _RegisterPageState extends State<RegisterPage> {
         ct0:        ct0,
         authToken:  authToken,
       );
+      // async 이후에는 mounted 체크
+      if (!mounted) return;
       hideLoadingCircle(context);
       setState(() => _isLoading = false);
 

@@ -1,5 +1,3 @@
-// go to user page
-
 import 'package:flutter/material.dart';
 import 'package:mediaproject/models/post.dart';
 import 'package:mediaproject/pages/oshi_profile_page.dart';

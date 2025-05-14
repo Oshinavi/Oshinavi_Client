@@ -9,7 +9,7 @@ class DatabaseService {
   final _storage = const FlutterSecureStorage();
 
   // --------------------------------------------------------------------------
-  // 회원가입 (변경 없음)
+  // 회원가입
   // --------------------------------------------------------------------------
   Future<bool> signup({
     required String username,
@@ -35,7 +35,7 @@ class DatabaseService {
   }
 
   // --------------------------------------------------------------------------
-  // 외부 트위터 유저 프로필 조회 (변경 없음)
+  // 외부 트위터 유저 프로필 조회
   // --------------------------------------------------------------------------
   Future<UserProfile?> getUserFromDB(String tweetId) async {
     final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/users/profile?tweet_id=$tweetId');
@@ -52,7 +52,7 @@ class DatabaseService {
   }
 
   // --------------------------------------------------------------------------
-  // 특정 스크린네임의 최근 트윗 목록 조회 (Authorization 헤더 추가)
+  // 특정 스크린네임의 최근 트윗 목록 조회
   // --------------------------------------------------------------------------
   Future<List<Post>> getAllPostFromDB(String screenName) async {
     // 1) 저장된 JWT 토큰 읽기

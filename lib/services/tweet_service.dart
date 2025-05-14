@@ -6,7 +6,7 @@ import 'package:mediaproject/constants/api_config.dart';
 class TweetService {
   static const _storage = FlutterSecureStorage();
 
-  /// JWT 토큰을 꺼내서 헤더에 붙입니다.
+  /// JWT 토큰을 꺼내서 헤더에 붙이기
   Future<Map<String, String>> _authHeaders() async {
     final token = await _storage.read(key: 'jwt_token');
     final headers = {'Content-Type': 'application/json'};
