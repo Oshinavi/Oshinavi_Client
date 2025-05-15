@@ -37,15 +37,15 @@ class TextFieldLogin extends StatelessWidget {
         cursorColor: cs.primary,
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.5)),
+          hintStyle: TextStyle(color: cs.onSurface.withAlpha(128)),
           filled: true,
-          fillColor: cs.surface,            // 배경은 surface
+          fillColor: cs.surface,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20, vertical: 16,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(32.0),
-            borderSide: BorderSide(color: cs.onSurface.withOpacity(0.2), width: 1),
+            borderSide: BorderSide(color: cs.onSurface.withAlpha(51), width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(32.0),

@@ -69,7 +69,14 @@ class OshiService {
     final uri = Uri.parse(
         '${ApiConfig.host}${ApiConfig.api}/users/profile?tweet_id=$tweetId');
 
-    final resp = await http.get(uri, headers: {'Content-Type': 'application/json'});
+    final token = await _storage.read(key: 'jwt_token');
+    final headers = <String,String>{
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+
+    // final resp = await http.get(uri, headers: {'Content-Type': 'application/json'});
+    final resp = await http.get(uri, headers: headers);
     if (resp.statusCode != 200) {
       print('⚠️ 서버 응답 오류: ${resp.body}');
       return null;

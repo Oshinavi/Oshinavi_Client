@@ -3,6 +3,7 @@ import 'package:flutter_neat_and_clean_calendar/flutter_neat_and_clean_calendar.
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
+  static const String routeName = '/calendar';
 
   @override
   State<CalendarPage> createState() => _CalendarPageState();
@@ -12,20 +13,20 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime _selectedDate = DateTime.now();
 
   final List<NeatCleanCalendarEvent> _eventList = [
-    NeatCleanCalendarEvent(
-      '회의 A',
-      startTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 10, 0),
-      endTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 11, 0),
-      description: '팀 회의',
-      color: Colors.blue,
-    ),
-    NeatCleanCalendarEvent(
-      '점심 미팅',
-      startTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 12, 30),
-      endTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 13, 30),
-      description: '클라이언트와 미팅',
-      color: Colors.orange,
-    ),
+    // NeatCleanCalendarEvent(
+    //   '회의 A',
+    //   startTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 10, 0),
+    //   endTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 11, 0),
+    //   description: '팀 회의',
+    //   color: Colors.blue,
+    // ),
+    // NeatCleanCalendarEvent(
+    //   '점심 미팅',
+    //   startTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 12, 30),
+    //   endTime: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 13, 30),
+    //   description: '클라이언트와 미팅',
+    //   color: Colors.orange,
+    // ),
   ];
 
   List<NeatCleanCalendarEvent> get _filteredEvents {
@@ -50,17 +51,16 @@ class _CalendarPageState extends State<CalendarPage> {
           return Column(
             children: [
 
-              /// ✅ 캘린더는 유연한 높이로, 최대 높이 제한
               ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: maxCalendarHeight),
                 child: Calendar(
                   startOnMonday: true,
                   weekDays: const ['월', '화', '수', '목', '금', '토', '일'],
                   eventsList: _eventList,
-                  showEvents: false, // ✅ 내부 이벤트 리스트 비활성화
+                  showEvents: false,
                   isExpandable: false,
                   isExpanded: true,
-                  hideArrows: false, // ✅ 좌우 화살표 유지
+                  hideArrows: false,
                   locale: 'ko_KR',
                   todayButtonText: '오늘',
                   allDayEventText: '하루 종일',
@@ -83,7 +83,7 @@ class _CalendarPageState extends State<CalendarPage> {
                 ),
               ),
 
-              /// ✅ 나머지 영역에 이벤트 리스트 표시 (더 위로 올라가도록)
+              /// 나머지 영역에 이벤트 리스트 표시 (더 위로 올라가도록)
               Expanded(
                 child: sortedEvents.isEmpty
                     ? const Center(child: Text("이 날은 일정이 없어요 😊"))
@@ -111,7 +111,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         onTap: () {
-                          // 👉 일정 상세 보기 Dialog
+                          // 일정 상세 보기 Dialog
                           showDialog(
                             context: context,
                             builder: (_) => AlertDialog(

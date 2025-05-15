@@ -6,6 +6,7 @@ import 'package:mediaproject/services/oshi_service.dart';
 
 class OshiProfilePage extends StatefulWidget {
   const OshiProfilePage({super.key});
+  static const routeName = '/oshi_profile';
 
   @override
   State<OshiProfilePage> createState() => _OshiProfilePageState();
@@ -44,6 +45,7 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
 
     setState(() => _isRegistering = true);
     final result = await OshiService().registerOshi(inputId);
+    if (!mounted) return;
     setState(() => _isRegistering = false);
 
     if (result.containsKey('error')) {
@@ -91,7 +93,9 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
                   TextField(
                     controller: _registerController,
                     decoration: const InputDecoration(
-                      labelText: '트위터 ID 입력', hintText: '예: my_favorite_id', border: OutlineInputBorder(),
+                      labelText: '트위터 ID 입력',
+                      hintText: '예: my_favorite_id',
+                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -100,7 +104,14 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
                     child: ElevatedButton(
                       onPressed: _isRegistering ? null : _registerOshi,
                       child: _isRegistering
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white
+                          )
+                      )
                           : const Text('오시 등록'),
                     ),
                   ),
@@ -146,8 +157,11 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
                       height: 140,
                       width: double.infinity,
                       child: bannerUrl != null
-                          ? Image.network(bannerUrl, fit: BoxFit.cover)
-                          : Container(color: theme.colorScheme.surfaceVariant),
+                          ? Image.network(
+                          bannerUrl,
+                          fit: BoxFit.cover
+                      )
+                          : Container(color: theme.colorScheme.surfaceContainerHighest),
                     ),
                     Positioned(
                       bottom: -40,
@@ -165,9 +179,20 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user.username, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.colorScheme.onBackground)),
+                      Text(user.username,
+                          style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface
+                          )
+                      ),
                       const SizedBox(height: 4),
-                      Text('@${user.tweetId}', style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                      Text('@${user.tweetId}',
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: theme.colorScheme.onSurface.withAlpha(153),
+                          )
+                      ),
                       const SizedBox(height: 20),
                       BioBox(text: user.bio),
                     ],

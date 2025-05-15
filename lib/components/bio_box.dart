@@ -5,7 +5,7 @@ User BIO Section - Twitter 스타일 텍스트 중심 구성
 */
 
 class BioBox extends StatelessWidget {
-  final String? text;            // ✅ nullable 로 변경
+  final String? text;
 
   const BioBox({super.key, this.text});
 

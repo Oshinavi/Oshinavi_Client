@@ -1,26 +1,26 @@
 class Schedule {
-  /// サーバー側で自動採番される予定 ID
+  /// 서버에서 자동으로 부여되는 ID
   final int id;
 
-  /// タイトル
+  /// 타이틀
   final String title;
 
-  /// カテゴリ
+  /// 카테고리
   final String category;
 
-  /// 開始日時 (ISO8601 文字列 → DateTime)
+  /// 개시시간 (ISO8601 문자열 → DateTime)
   final DateTime startAt;
 
-  /// 終了日時 (ISO8601 文字列 → DateTime)
+  /// 종료시간 (ISO8601 문자열 → DateTime)
   final DateTime endAt;
 
-  /// 説明
+  /// 스케줄 설명
   final String description;
 
   /// 관련 트위터 스크린네임 (서버→클라이언트 시에는 null 가능)
   final String? relatedTwitterInternalId;
 
-  /// 作成者のユーザー ID
+  /// 작성자의 유저 ID
   final int createdByUserId;
 
   Schedule({

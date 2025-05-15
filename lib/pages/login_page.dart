@@ -1,7 +1,4 @@
-// lib/pages/login_page.dart
-
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mediaproject/components/loading_circle.dart';
 import 'package:mediaproject/components/simplebutton.dart';
 import 'package:mediaproject/components/text_field_login.dart';
@@ -11,6 +8,7 @@ import 'package:mediaproject/services/auth/auth_service.dart';
 class LoginPage extends StatefulWidget {
   final VoidCallback onTap;
   const LoginPage({super.key, required this.onTap});
+  static const routeName = '/login';
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -18,8 +16,6 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _auth = AuthService();
-  final _storage = const FlutterSecureStorage();
-
   final TextEditingController emailController = TextEditingController();
   final TextEditingController pwController = TextEditingController();
 
@@ -57,13 +53,12 @@ class _LoginPageState extends State<LoginPage> {
         const SnackBar(content: Text('로그인 성공')),
       );
 
-      // ───────────────────────────────────────────
-      // pushReplacement → pushAndRemoveUntil 로 변경
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(
+            settings: RouteSettings(name: HomePage.routeName),
+            builder: (_) => const HomePage()),
             (route) => false,
       );
-      // ───────────────────────────────────────────
 
     } catch (e) {
       if (!mounted) return;

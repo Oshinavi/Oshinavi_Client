@@ -1,5 +1,3 @@
-// lib/components/post_tile.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:characters/characters.dart';
@@ -12,6 +10,7 @@ import '../services/oshi_provider.dart';
 import '../services/tweet_provider.dart';
 import '../viewmodels/schedule_view_model.dart';
 import '../models/schedule.dart';
+import '../pages/image_preview_page.dart';
 
 class PostTile extends StatefulWidget {
   final Post post;
@@ -39,9 +38,49 @@ class _PostTileState extends State<PostTile> {
   final TextEditingController _replyController = TextEditingController();
   int _replyByteCount = 0;
   bool _isLoadingAutoReply = false;
-
-  // 원문/번역 토글 플래그
+  bool _isSendingReply = false;
   bool _showOriginal = false;
+
+  /// ① 이미지 URL 리스트를 받아 1~4개 격자로 배치해 주는 헬퍼
+  Widget _buildImageGrid(List<String> urls) {
+    final display = urls.take(4).toList();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: display.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: display.length == 1 ? 1 : 2,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+        ),
+        itemBuilder: (ctx, i) => GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => ImagePreviewPage(
+                imageUrl: display[i],
+                tag: '${widget.post.id}_$i',
+              ),
+            ));
+          },
+          child: Hero(
+            tag: '${widget.post.id}_$i',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                display[i],
+                fit: BoxFit.cover,
+                loadingBuilder: (ctx, child, prog) =>
+                prog == null ? child : const Center(child: CircularProgressIndicator()),
+                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   void _updateLength(String text) {
     int count = 0;
@@ -56,6 +95,7 @@ class _PostTileState extends State<PostTile> {
     try {
       final tweetProvider = Provider.of<TweetProvider>(context, listen: false);
       final reply = await tweetProvider.generateAutoReply(widget.post.message);
+      if (!mounted) return;
       if (reply != null) {
         _replyController.clear();
         for (final ch in reply.characters) {
@@ -68,26 +108,30 @@ class _PostTileState extends State<PostTile> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("자동 생성 실패: ${e.toString()}")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("자동 생성 실패: ${e.toString()}")),
+        );
+      }
     } finally {
-      setState(() => _isLoadingAutoReply = false);
+      if (mounted) setState(() => _isLoadingAutoReply = false);
     }
   }
 
   Future<void> _handleReplySubmit() async {
     final replyText = _replyController.text.trim();
     if (_replyByteCount > 280) {
-      _showDialog("エラー", "文字数が多すぎます（最大280文字）");
+      _showDialog("에러", "글자수가 너무 많습니다（최대 280자）");
       return;
     }
+    setState(() => _isSendingReply = true);
     try {
       final tweetProvider = Provider.of<TweetProvider>(context, listen: false);
       final success = await tweetProvider.sendReply(
         tweetId: widget.post.id,
         replyText: replyText,
       );
+      if (!mounted) return;
       if (success) {
         _replyController.clear();
         setState(() => _replyByteCount = 0);
@@ -98,13 +142,18 @@ class _PostTileState extends State<PostTile> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("리플라이 전송 중 오류: ${e.toString()}")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("리플라이 전송 중 오류: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSendingReply = false);
     }
   }
 
   void _showDialog(String title, String content) {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -117,7 +166,6 @@ class _PostTileState extends State<PostTile> {
     );
   }
 
-  /// 링크 클릭 시 외부 브라우저로 열기
   Future<void> _onOpen(LinkableElement link) async {
     final uri = Uri.parse(link.url);
     if (await canLaunchUrl(uri)) {
@@ -125,7 +173,6 @@ class _PostTileState extends State<PostTile> {
     }
   }
 
-  /// 일정 추출 팝업
   Future<void> _onExtractSchedule() async {
     final sd = widget.post.includedStartDate;
     final ed = widget.post.includedEndDate;
@@ -133,7 +180,6 @@ class _PostTileState extends State<PostTile> {
       _showDialog("알림", "이 포스트에는 일정 정보가 없습니다");
       return;
     }
-
     DateTime startAt = sd ?? ed!.subtract(const Duration(hours: 1));
     DateTime endAt   = ed ?? sd!.add(const Duration(hours: 1));
     final titleCtrl = TextEditingController(text: '');
@@ -145,7 +191,8 @@ class _PostTileState extends State<PostTile> {
       '음반', '굿즈', '영상', '게임',
     ];
     String selectedCategory = categories.contains(widget.post.tweetAbout)
-        ? widget.post.tweetAbout! : categories.first;
+        ? widget.post.tweetAbout
+        : categories.first;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -276,6 +323,8 @@ class _PostTileState extends State<PostTile> {
     final theme = Theme.of(context);
     final post = widget.post;
     final avatarUrl = post.profileImageUrl?.replaceAll('_normal', '_400x400');
+    final primary = theme.colorScheme.primary;
+    final onPrimary = theme.colorScheme.onPrimary;
 
     return GestureDetector(
       onTap: widget.onPostTap,
@@ -283,13 +332,13 @@ class _PostTileState extends State<PostTile> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.secondary.withOpacity(0.05),
+          color: theme.colorScheme.secondary.withAlpha(13),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 사용자 정보 + 옵션 버튼
+            // 사용자 정보 + 옵션
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -297,14 +346,15 @@ class _PostTileState extends State<PostTile> {
                   onTap: widget.onUserTap,
                   child: CircleAvatar(
                     radius: 22,
-                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                    backgroundColor: theme.colorScheme.surfaceVariant,
+                    backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                     child: avatarUrl == null
                         ? Icon(Icons.person, color: theme.colorScheme.primary)
                         : null,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: GestureDetector(
                     onTap: widget.onUserTap,
@@ -316,7 +366,7 @@ class _PostTileState extends State<PostTile> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,  // 사용자명은 onSurface 사용
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -324,7 +374,7 @@ class _PostTileState extends State<PostTile> {
                           '@${widget.oshiUserId ?? post.uid}',
                           style: TextStyle(
                             fontSize: 14,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withAlpha(153),
                           ),
                         ),
                       ],
@@ -341,7 +391,7 @@ class _PostTileState extends State<PostTile> {
 
             const SizedBox(height: 16),
 
-            // 번역된 텍스트 또는 원문 (토글)
+            // 본문 / 번역
             Linkify(
               text: _showOriginal ? post.message : post.translatedMessage,
               onOpen: _onOpen,
@@ -356,14 +406,17 @@ class _PostTileState extends State<PostTile> {
               ),
             ),
 
-            // 상세 페이지 전용 UI
+            // ② 이미지가 있으면 격자 형태로 표시
+            if (post.imageUrls.isNotEmpty) _buildImageGrid(post.imageUrls),
+
+            // 리플 입력 영역 (onPostPage일 때만)
             if (widget.onPostPage) ...[
               const SizedBox(height: 12),
               Text(
                 DateFormat('yyyy.MM.dd HH:mm').format(post.date),
                 style: TextStyle(
                   fontSize: 13.5,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withAlpha(153),
                 ),
               ),
               const Divider(height: 32),
@@ -373,7 +426,8 @@ class _PostTileState extends State<PostTile> {
                 onChanged: _updateLength,
                 decoration: InputDecoration(
                   hintText: "리플 입력...",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -384,26 +438,54 @@ class _PostTileState extends State<PostTile> {
                     "입력 가능한 문자수: ${280 - _replyByteCount}",
                     style: TextStyle(
                       fontSize: 12,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withAlpha(153),
                     ),
                   ),
-                  Row(children: [
-                    ElevatedButton(
-                      onPressed: _isLoadingAutoReply ? null : _handleAutoReply,
-                      child: _isLoadingAutoReply
-                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text("자동생성"),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _handleReplySubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _isLoadingAutoReply || _isSendingReply
+                            ? null
+                            : _handleAutoReply,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: onPrimary,
+                        ),
+                        child: _isLoadingAutoReply
+                            ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                            AlwaysStoppedAnimation(onPrimary),
+                          ),
+                        )
+                            : const Text("자동생성"),
                       ),
-                      child: const Text("전송"),
-                    ),
-                  ]),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _isLoadingAutoReply || _isSendingReply
+                            ? null
+                            : _handleReplySubmit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: onPrimary,
+                        ),
+                        child: _isSendingReply
+                            ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                            AlwaysStoppedAnimation(onPrimary),
+                          ),
+                        )
+                            : const Text("전송"),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

@@ -1,5 +1,3 @@
-// lib/components/appbardrawer.dart
-
 import 'package:flutter/material.dart';
 import 'package:mediaproject/components/appbardrawertile.dart';
 import 'package:mediaproject/pages/oshi_profile_page.dart';
@@ -8,7 +6,7 @@ import 'package:mediaproject/pages/settings_page.dart';
 import 'package:mediaproject/pages/monthly_calendar_page.dart';
 import 'package:mediaproject/services/auth/login_or_register.dart';
 import 'package:mediaproject/services/auth/auth_service.dart';
-import 'package:mediaproject/main.dart'; // navigatorKey
+import 'package:mediaproject/main.dart';
 
 class AppBarDrawer extends StatelessWidget {
   AppBarDrawer({Key? key}) : super(key: key);

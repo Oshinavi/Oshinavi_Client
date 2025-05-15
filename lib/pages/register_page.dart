@@ -9,6 +9,7 @@ import 'package:mediaproject/services/auth/auth_service.dart';
 class RegisterPage extends StatefulWidget {
   final void Function()? onTap;
   const RegisterPage({super.key, required this.onTap});
+  static const routeName = '/register';
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -22,6 +23,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController pwController        = TextEditingController();
   final TextEditingController confirmPwController = TextEditingController();
   final TextEditingController tweetIdController   = TextEditingController();
+  final TextEditingController ct0Controller         = TextEditingController();
+  final TextEditingController authTokenController   = TextEditingController();
 
   bool _isLoading = false;
 
@@ -32,6 +35,8 @@ class _RegisterPageState extends State<RegisterPage> {
     pwController.dispose();
     confirmPwController.dispose();
     tweetIdController.dispose();
+    ct0Controller.dispose();
+    authTokenController.dispose();
     super.dispose();
   }
 
@@ -76,6 +81,24 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    final ct0 = ct0Controller.text.trim();
+    if (ct0.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ ct0 값을 입력하세요.')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final authToken = authTokenController.text.trim();
+    if (authToken.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ auth_token 값을 입력하세요.')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
     showLoadingCircle(context);
     try {
       final result = await _auth.signup(
@@ -84,7 +107,11 @@ class _RegisterPageState extends State<RegisterPage> {
         password:   pwController.text,
         cfpassword: confirmPwController.text,
         tweetId:    tweetIdController.text.trim(),
+        ct0:        ct0,
+        authToken:  authToken,
       );
+      // async 이후에는 mounted 체크
+      if (!mounted) return;
       hideLoadingCircle(context);
       setState(() => _isLoading = false);
 
@@ -130,7 +157,9 @@ class _RegisterPageState extends State<RegisterPage> {
           const SnackBar(content: Text('✅ 회원가입 및 로그인 성공')),
         );
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomePage()),
+          MaterialPageRoute(
+              settings: RouteSettings(name: HomePage.routeName),
+              builder: (_) => const HomePage()),
         );
       } else {
         // 기타 에러는 Snackbar
@@ -183,6 +212,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 TextFieldLogin(controller: confirmPwController, hintText: "비밀번호 확인",                    obscureText: true),
                 const SizedBox(height: 10),
                 TextFieldLogin(controller: tweetIdController,   hintText: "트위터 id(@ 제외)를 입력하세요", obscureText: false),
+                const SizedBox(height: 10),
+                TextFieldLogin(
+                  controller: ct0Controller,
+                  hintText: "ct0 값을 입력하세요",
+                  obscureText: false,
+                ),
+                const SizedBox(height: 10),
+                TextFieldLogin(
+                  controller: authTokenController,
+                  hintText: "auth_token 값을 입력하세요",
+                  obscureText: true,
+                ),
                 const SizedBox(height: 25),
 
                 SimpleButton(

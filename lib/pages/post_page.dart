@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mediaproject/components/post_tile.dart';
 import 'package:mediaproject/helper/navigates_pages.dart';
 import 'package:mediaproject/models/post.dart';
@@ -8,6 +7,7 @@ import 'package:mediaproject/services/oshi_provider.dart';
 class PostPage extends StatefulWidget {
   final Post post;
   final OshiProvider oshiProvider;
+  static const routeName = '/post';
 
   const PostPage({
     super.key,
@@ -40,7 +40,6 @@ class _PostPageState extends State<PostPage> {
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
-    final formattedDate = DateFormat('yyyy.MM.dd HH:mm').format(post.date);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,

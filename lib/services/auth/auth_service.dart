@@ -1,9 +1,6 @@
-// lib/services/auth/auth_service.dart
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:mediaproject/services/auth/login_or_register.dart';
-import 'package:mediaproject/main.dart';
-import '../api/dio_client.dart';               // navigatorKey
+import '../api/dio_client.dart';
 
 class AuthService {
   // 전역 DioClient 의 dio 인스턴스 사용
@@ -24,6 +21,8 @@ class AuthService {
     required String password,
     required String cfpassword,
     required String tweetId,
+    required String ct0,
+    required String authToken,
   }) async {
     try {
       final resp = await _dio.post(_signupPath, data: {
@@ -32,6 +31,8 @@ class AuthService {
         'password': password,
         'cfpassword': cfpassword,
         'tweet_id': tweetId,
+        'ct0': ct0,
+        'auth_token' : authToken,
       });
 
       if (resp.statusCode == 201) {
