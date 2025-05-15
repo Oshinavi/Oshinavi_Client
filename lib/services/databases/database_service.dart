@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mediaproject/models/user.dart';
@@ -81,6 +82,7 @@ class DatabaseService {
     // 3) 간헐적 500 대응
     Future<http.Response> _attempt() => http.get(uri, headers: headers);
     var resp = await _attempt();
+    debugPrint(utf8.decode(resp.bodyBytes), wrapWidth: 2000);
     if (resp.statusCode == 500) {
       await Future.delayed(const Duration(milliseconds: 300));
       resp = await _attempt();
@@ -92,6 +94,7 @@ class DatabaseService {
     // 5) JSON → List<Post>
     try {
       final List<dynamic> jsonList = jsonDecode(utf8.decode(resp.bodyBytes));
+
       return jsonList.map((e) => Post.fromMap(e)).toList();
     } catch (e) {
       print('❌ JSON 파싱 오류(getAllPost): $e');
