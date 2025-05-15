@@ -6,6 +6,7 @@ import 'package:mediaproject/services/oshi_service.dart';
 
 class OshiProfilePage extends StatefulWidget {
   const OshiProfilePage({super.key});
+  static const routeName = '/oshi_profile';
 
   @override
   State<OshiProfilePage> createState() => _OshiProfilePageState();

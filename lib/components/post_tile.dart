@@ -8,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/post.dart';
 import '../services/oshi_provider.dart';
 import '../services/tweet_provider.dart';
+import '../viewmodels/schedule_view_model.dart';
+import '../models/schedule.dart';
 import '../pages/image_preview_page.dart';
 
 class PostTile extends StatefulWidget {
@@ -39,8 +41,7 @@ class _PostTileState extends State<PostTile> {
   bool _isSendingReply = false;
   bool _showOriginal = false;
 
-  // ────────────────────────────────────────────────────────────────────────
-  // ★ 여기에 반드시 들어가야 하는 이미지 격자 헬퍼 메서드
+  /// ① 이미지 URL 리스트를 받아 1~4개 격자로 배치해 주는 헬퍼
   Widget _buildImageGrid(List<String> urls) {
     final display = urls.take(4).toList();
     return Padding(
@@ -80,7 +81,6 @@ class _PostTileState extends State<PostTile> {
       ),
     );
   }
-  // ────────────────────────────────────────────────────────────────────────
 
   void _updateLength(String text) {
     int count = 0;
@@ -95,6 +95,7 @@ class _PostTileState extends State<PostTile> {
     try {
       final tweetProvider = Provider.of<TweetProvider>(context, listen: false);
       final reply = await tweetProvider.generateAutoReply(widget.post.message);
+      if (!mounted) return;
       if (reply != null) {
         _replyController.clear();
         for (final ch in reply.characters) {
@@ -107,11 +108,13 @@ class _PostTileState extends State<PostTile> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("자동 생성 실패: ${e.toString()}")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("자동 생성 실패: ${e.toString()}")),
+        );
+      }
     } finally {
-      setState(() => _isLoadingAutoReply = false);
+      if (mounted) setState(() => _isLoadingAutoReply = false);
     }
   }
 
@@ -128,6 +131,7 @@ class _PostTileState extends State<PostTile> {
         tweetId: widget.post.id,
         replyText: replyText,
       );
+      if (!mounted) return;
       if (success) {
         _replyController.clear();
         setState(() => _replyByteCount = 0);
@@ -138,15 +142,18 @@ class _PostTileState extends State<PostTile> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("리플라이 전송 중 오류: ${e.toString()}")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("리플라이 전송 중 오류: ${e.toString()}")),
+        );
+      }
     } finally {
-      setState(() => _isSendingReply = false);
+      if (mounted) setState(() => _isSendingReply = false);
     }
   }
 
   void _showDialog(String title, String content) {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -166,7 +173,119 @@ class _PostTileState extends State<PostTile> {
     }
   }
 
-  Future<void> _showOptions() async {
+  Future<void> _onExtractSchedule() async {
+    final sd = widget.post.includedStartDate;
+    final ed = widget.post.includedEndDate;
+    if (sd == null && ed == null) {
+      _showDialog("알림", "이 포스트에는 일정 정보가 없습니다");
+      return;
+    }
+    DateTime startAt = sd ?? ed!.subtract(const Duration(hours: 1));
+    DateTime endAt   = ed ?? sd!.add(const Duration(hours: 1));
+    final titleCtrl = TextEditingController(text: '');
+    final descCtrl  = TextEditingController(text: '');
+    final twtCtrl   = TextEditingController(text: widget.post.uid);
+
+    const categories = [
+      '일반', '방송', '라디오', '라이브',
+      '음반', '굿즈', '영상', '게임',
+    ];
+    String selectedCategory = categories.contains(widget.post.tweetAbout)
+        ? widget.post.tweetAbout
+        : categories.first;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setState) {
+          Widget _buildDateTimeField(String label, DateTime value, VoidCallback onTap) {
+            return TextField(
+              readOnly: true,
+              decoration: InputDecoration(
+                labelText: label,
+                hintText: DateFormat('yyyy.MM.dd HH:mm').format(value),
+              ),
+              controller: TextEditingController(text: DateFormat('yyyy.MM.dd HH:mm').format(value)),
+              onTap: onTap,
+            );
+          }
+
+          return AlertDialog(
+            title: const Text('일정 등록'),
+            content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '제목')),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  decoration: const InputDecoration(labelText: '카테고리'),
+                  items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (v) => setState(() => selectedCategory = v ?? categories.first),
+                ),
+                const SizedBox(height: 8),
+                TextField(controller: twtCtrl, decoration: const InputDecoration(labelText: '트위터 스크린네임')),
+                const SizedBox(height: 8),
+                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '설명'), maxLines: 2),
+                const SizedBox(height: 12),
+                _buildDateTimeField('시작 일시', startAt, () async {
+                  final d = await showDatePicker(
+                    context: ctx, initialDate: startAt, firstDate: DateTime(2000), lastDate: DateTime(2100),
+                  );
+                  if (d == null) return;
+                  final t = await showTimePicker(
+                    context: ctx, initialTime: TimeOfDay.fromDateTime(startAt),
+                  );
+                  if (t == null) return;
+                  setState(() {
+                    startAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+                    if (endAt.isBefore(startAt)) endAt = startAt.add(const Duration(hours: 1));
+                  });
+                }),
+                const SizedBox(height: 8),
+                _buildDateTimeField('종료 일시', endAt, () async {
+                  final d = await showDatePicker(
+                    context: ctx, initialDate: endAt, firstDate: startAt, lastDate: DateTime(2100),
+                  );
+                  if (d == null) return;
+                  final t = await showTimePicker(
+                    context: ctx, initialTime: TimeOfDay.fromDateTime(endAt),
+                  );
+                  if (t == null) return;
+                  setState(() => endAt = DateTime(d.year, d.month, d.day, t.hour, t.minute));
+                }),
+              ]),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+              TextButton(
+                onPressed: titleCtrl.text.isNotEmpty ? () => Navigator.pop(ctx, true) : null,
+                child: const Text('등록'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+    if (ok != true) return;
+
+    final vm = context.read<ScheduleViewModel>();
+    await vm.addSchedule(Schedule(
+      id: 0,
+      title: titleCtrl.text,
+      category: selectedCategory,
+      startAt: startAt,
+      endAt: endAt,
+      description: descCtrl.text,
+      relatedTwitterInternalId: twtCtrl.text,
+      createdByUserId: 0,
+    ));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('일정이 등록되었습니다.')),
+    );
+  }
+
+  void _showOptions() {
     showModalBottomSheet(
       context: context,
       builder: (_) => SafeArea(
@@ -199,16 +318,6 @@ class _PostTileState extends State<PostTile> {
     );
   }
 
-  Future<void> _onExtractSchedule() async {
-    final sd = widget.post.includedStartDate;
-    final ed = widget.post.includedEndDate;
-    if (sd == null && ed == null) {
-      _showDialog("알림", "이 포스트에는 일정 정보가 없습니다");
-      return;
-    }
-    // 기존 로직 유지...
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -229,7 +338,7 @@ class _PostTileState extends State<PostTile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 헤더
+            // 사용자 정보 + 옵션
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -237,7 +346,8 @@ class _PostTileState extends State<PostTile> {
                   onTap: widget.onUserTap,
                   child: CircleAvatar(
                     radius: 22,
-                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                    backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,
                     child: avatarUrl == null
                         ? Icon(Icons.person, color: theme.colorScheme.primary)
@@ -251,16 +361,22 @@ class _PostTileState extends State<PostTile> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(post.username,
-                            style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onSurface)),
+                        Text(
+                          post.username,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text('@${widget.oshiUserId ?? post.uid}',
-                            style: TextStyle(
-                                fontSize: 14,
-                                color: theme.colorScheme.onSurface.withAlpha(153))),
+                        Text(
+                          '@${widget.oshiUserId ?? post.uid}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: theme.colorScheme.onSurface.withAlpha(153),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -275,27 +391,33 @@ class _PostTileState extends State<PostTile> {
 
             const SizedBox(height: 16),
 
-            // 본문
+            // 본문 / 번역
             Linkify(
               text: _showOriginal ? post.message : post.translatedMessage,
               onOpen: _onOpen,
               style: TextStyle(
-                  fontSize: 16.5, height: 1.6, color: theme.colorScheme.onSurface),
+                fontSize: 16.5,
+                height: 1.6,
+                color: theme.colorScheme.onSurface,
+              ),
               linkStyle: TextStyle(
-                  color: theme.colorScheme.primary, decoration: TextDecoration.underline),
+                color: theme.colorScheme.primary,
+                decoration: TextDecoration.underline,
+              ),
             ),
 
-            // 이미지 격자
+            // ② 이미지가 있으면 격자 형태로 표시
             if (post.imageUrls.isNotEmpty) _buildImageGrid(post.imageUrls),
 
-            // 리플 입력 영역 (onPostPage)
+            // 리플 입력 영역 (onPostPage일 때만)
             if (widget.onPostPage) ...[
               const SizedBox(height: 12),
               Text(
                 DateFormat('yyyy.MM.dd HH:mm').format(post.date),
                 style: TextStyle(
-                    fontSize: 13.5,
-                    color: theme.colorScheme.onSurface.withAlpha(153)),
+                  fontSize: 13.5,
+                  color: theme.colorScheme.onSurface.withAlpha(153),
+                ),
               ),
               const Divider(height: 32),
               TextField(
@@ -310,56 +432,60 @@ class _PostTileState extends State<PostTile> {
               ),
               const SizedBox(height: 8),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(
-                      "입력 가능한 문자수: ${280 - _replyByteCount}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurface.withAlpha(153),
-                      ),
+                  Text(
+                    "입력 가능한 문자수: ${280 - _replyByteCount}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withAlpha(153),
                     ),
                   ),
                   Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       ElevatedButton(
-                        onPressed: (_isLoadingAutoReply || _isSendingReply)
+                        onPressed: _isLoadingAutoReply || _isSendingReply
                             ? null
                             : _handleAutoReply,
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: primary, foregroundColor: onPrimary),
+                          backgroundColor: primary,
+                          foregroundColor: onPrimary,
+                        ),
                         child: _isLoadingAutoReply
                             ? SizedBox(
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(onPrimary),
+                            valueColor:
+                            AlwaysStoppedAnimation(onPrimary),
                           ),
                         )
                             : const Text("자동생성"),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: (_isLoadingAutoReply || _isSendingReply)
+                        onPressed: _isLoadingAutoReply || _isSendingReply
                             ? null
                             : _handleReplySubmit,
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: primary, foregroundColor: onPrimary),
+                          backgroundColor: primary,
+                          foregroundColor: onPrimary,
+                        ),
                         child: _isSendingReply
                             ? SizedBox(
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(onPrimary),
+                            valueColor:
+                            AlwaysStoppedAnimation(onPrimary),
                           ),
                         )
                             : const Text("전송"),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ],

@@ -7,6 +7,7 @@ import 'package:mediaproject/services/oshi_provider.dart';
 class PostPage extends StatefulWidget {
   final Post post;
   final OshiProvider oshiProvider;
+  static const routeName = '/post';
 
   const PostPage({
     super.key,

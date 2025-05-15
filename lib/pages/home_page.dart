@@ -5,11 +5,18 @@ import 'package:mediaproject/components/appbardrawer.dart';
 import 'package:mediaproject/components/post_tile.dart';
 import 'package:mediaproject/helper/navigates_pages.dart';
 import 'package:mediaproject/pages/oshi_profile_page.dart';
+import 'package:mediaproject/pages/profile_page.dart';     // ← ProfilePage
+import 'package:mediaproject/pages/register_page.dart';    // ← RegisterPage
+import 'package:mediaproject/pages/calendar_page.dart';    // ← CalendarPage
+import 'package:mediaproject/pages/login_page.dart';       // ← LoginPage
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/oshi_provider.dart';
 
+import 'image_preview_page.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
+  static const routeName = '/homepage';
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -21,6 +28,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
   bool _isInitialized = false;
   bool _isLoading = false;
   String? _oshiTweetId;
+  String? _lastPushedRoute;
 
   @override
   void didChangeDependencies() {
@@ -41,8 +49,23 @@ class _HomePageState extends State<HomePage> with RouteAware {
   }
 
   @override
+  void didPushNext() {
+    // 다음에 어떤 페이지가 올라갔는지 기록해 둠
+    _lastPushedRoute = ModalRoute.of(context)!.settings.name;
+  }
+
+  @override
   void didPopNext() {
-    if (!_isLoading) _loadOshiAndPosts();
+    const reloadFrom = {
+      OshiProfilePage.routeName,
+      ProfilePage.routeName,
+      CalendarPage.routeName,
+      LoginPage.routeName,
+      RegisterPage.routeName,
+    };
+    if (reloadFrom.contains(_lastPushedRoute) && !_isLoading) {
+      _loadOshiAndPosts();
+    }
   }
 
   Future<void> _loadOshiAndPosts() async {
@@ -70,7 +93,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
       backgroundColor: theme.scaffoldBackgroundColor,
       drawer: AppBarDrawer(),
       appBar: AppBar(title: const Text("홈")),
-      body: _buildBody(theme, posts),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(theme, posts),
     );
   }
 
@@ -86,7 +111,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const OshiProfilePage()),
+                MaterialPageRoute(
+                    settings: RouteSettings(name: OshiProfilePage.routeName),
+                    builder: (_) => const OshiProfilePage()),
               ),
               icon: const Icon(Icons.person_add),
               label: const Text('오시 등록하러 가기'),
@@ -117,6 +144,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
     }
 
     return ListView.separated(
+      key: const PageStorageKey('home_posts_list'),
       padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: posts.length,
       itemBuilder: (ctx, i) {

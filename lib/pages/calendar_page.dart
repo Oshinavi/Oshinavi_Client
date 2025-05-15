@@ -3,6 +3,7 @@ import 'package:flutter_neat_and_clean_calendar/flutter_neat_and_clean_calendar.
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
+  static const String routeName = '/calendar';
 
   @override
   State<CalendarPage> createState() => _CalendarPageState();

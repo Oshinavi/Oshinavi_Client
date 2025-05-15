@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ImagePreviewPage extends StatelessWidget {
+  static const String routeName = '/imagePreview';
   final String imageUrl;
   final String tag;
 

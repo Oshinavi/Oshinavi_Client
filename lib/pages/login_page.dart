@@ -8,6 +8,7 @@ import 'package:mediaproject/services/auth/auth_service.dart';
 class LoginPage extends StatefulWidget {
   final VoidCallback onTap;
   const LoginPage({super.key, required this.onTap});
+  static const routeName = '/login';
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -53,7 +54,9 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(
+            settings: RouteSettings(name: HomePage.routeName),
+            builder: (_) => const HomePage()),
             (route) => false,
       );
 

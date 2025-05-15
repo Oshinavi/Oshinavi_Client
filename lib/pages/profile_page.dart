@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 class ProfilePage extends StatefulWidget {
   final String tweetId;
   const ProfilePage({super.key, required this.tweetId});
+  static const routeName = '/profile';
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();

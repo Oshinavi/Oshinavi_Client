@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:mediaproject/pages/image_preview_page.dart';
 import 'package:mediaproject/services/auth/auth_gate.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/tweet_provider.dart';
@@ -51,6 +52,18 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+        routes: {
+          ImagePreviewPage.routeName: (ctx) {
+            final args = ModalRoute
+                .of(ctx)!
+                .settings
+                .arguments as Map<String, String>;
+            return ImagePreviewPage(
+              imageUrl: args['imageUrl']!,
+              tag: args['tag']!,
+            );
+          },
+        },
       supportedLocales: const [
         Locale('ko', 'KR'),
         Locale('en', 'US'),

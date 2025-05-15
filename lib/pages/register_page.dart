@@ -9,6 +9,7 @@ import 'package:mediaproject/services/auth/auth_service.dart';
 class RegisterPage extends StatefulWidget {
   final void Function()? onTap;
   const RegisterPage({super.key, required this.onTap});
+  static const routeName = '/register';
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -156,7 +157,9 @@ class _RegisterPageState extends State<RegisterPage> {
           const SnackBar(content: Text('✅ 회원가입 및 로그인 성공')),
         );
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomePage()),
+          MaterialPageRoute(
+              settings: RouteSettings(name: HomePage.routeName),
+              builder: (_) => const HomePage()),
         );
       } else {
         // 기타 에러는 Snackbar
