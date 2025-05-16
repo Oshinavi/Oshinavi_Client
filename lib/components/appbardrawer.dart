@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:mediaproject/components/appbardrawertile.dart';
+import 'package:mediaproject/components/profile_header.dart';
 import 'package:mediaproject/pages/oshi_profile_page.dart';
 import 'package:mediaproject/pages/profile_page.dart';
 import 'package:mediaproject/pages/settings_page.dart';
@@ -7,6 +9,8 @@ import 'package:mediaproject/pages/monthly_calendar_page.dart';
 import 'package:mediaproject/services/auth/login_or_register.dart';
 import 'package:mediaproject/services/auth/auth_service.dart';
 import 'package:mediaproject/main.dart';
+
+import '../providers/user_profile_provider.dart';
 
 class AppBarDrawer extends StatelessWidget {
   AppBarDrawer({Key? key}) : super(key: key);
@@ -31,6 +35,9 @@ class AppBarDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProfileProvider>().loadProfile();
+    });
     final colors    = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.titleMedium!;
 
@@ -41,9 +48,12 @@ class AppBarDrawer extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 25.0),
           child: Column(
             children: [
-              const SizedBox(height: 50),
-              Icon(Icons.person, size: 72, color: colors.primary),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
+
+              // 프로필 헤더 컴포넌트
+              const ProfileHeader(),
+
+              const SizedBox(height: 20),
               Divider(color: colors.secondary),
               const SizedBox(height: 10),
 

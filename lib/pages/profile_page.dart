@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediaproject/components/bio_box.dart';
-import 'package:mediaproject/models/user.dart';
+import 'package:mediaproject/models/user_profile.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:provider/provider.dart';
 

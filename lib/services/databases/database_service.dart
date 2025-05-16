@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:mediaproject/models/user.dart';
+import 'package:mediaproject/models/user_profile.dart';
 import 'package:mediaproject/models/post.dart';
 import 'package:mediaproject/constants/api_config.dart';
 

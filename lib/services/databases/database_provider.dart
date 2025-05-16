@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:mediaproject/models/post.dart';
-import 'package:mediaproject/models/user.dart';
+import 'package:mediaproject/models/user_profile.dart';
 import 'package:mediaproject/services/databases/database_service.dart';
 
 class DatabaseProvider extends ChangeNotifier {

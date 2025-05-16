@@ -12,8 +12,6 @@ import 'package:mediaproject/pages/login_page.dart';       // ← LoginPage
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/oshi_provider.dart';
 
-import 'image_preview_page.dart';
-
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
   static const routeName = '/homepage';
@@ -27,6 +25,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
   late OshiProvider _oshiProvider;
   bool _isInitialized = false;
   bool _isLoading = false;
+  bool _initialLoadDone = false; // 초기 로딩 여부
   String? _oshiTweetId;
   String? _lastPushedRoute;
 
@@ -50,7 +49,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   void didPushNext() {
-    // 다음에 어떤 페이지가 올라갔는지 기록해 둠
     _lastPushedRoute = ModalRoute.of(context)!.settings.name;
   }
 
@@ -80,7 +78,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
     } catch (e) {
       debugPrint("❌ 오시 포스트 로드 오류: $e");
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _initialLoadDone = true;
+      });
     }
   }
 
@@ -93,27 +94,40 @@ class _HomePageState extends State<HomePage> with RouteAware {
       backgroundColor: theme.scaffoldBackgroundColor,
       drawer: AppBarDrawer(),
       appBar: AppBar(title: const Text("홈")),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildBody(theme, posts),
+      body: RefreshIndicator(
+        onRefresh: _loadOshiAndPosts,
+        displacement: 16,
+        child: !_initialLoadDone && _isLoading
+            ? ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator())),
+          ],
+        )
+            : _buildBody(theme, posts),
+      ),
     );
   }
 
   Widget _buildBody(ThemeData theme, List posts) {
     if (_oshiTweetId == null || _oshiTweetId!.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.favorite_border, size: 48, color: theme.primaryColor),
-            const SizedBox(height: 12),
-            Text('아직 등록된 오시가 없어요', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 80),
+          Icon(Icons.favorite_border, size: 48, color: theme.primaryColor),
+          const SizedBox(height: 12),
+          Text('아직 등록된 오시가 없어요', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 16),
+          Center(
+            child: ElevatedButton.icon(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                    settings: RouteSettings(name: OshiProfilePage.routeName),
-                    builder: (_) => const OshiProfilePage()),
+                  settings: RouteSettings(name: OshiProfilePage.routeName),
+                  builder: (_) => const OshiProfilePage(),
+                ),
               ),
               icon: const Icon(Icons.person_add),
               label: const Text('오시 등록하러 가기'),
@@ -126,26 +140,31 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 elevation: 2,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
     if (posts.isEmpty) {
-      return Center(
-        child: Text(
-          "트윗이 없습니다...",
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(
-              color: theme.colorScheme.onSurface.withAlpha(153)
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 80),
+          Center(
+            child: Text(
+              "트윗이 없습니다...",
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.onSurface.withAlpha(153)),
+            ),
           ),
-        ),
+        ],
       );
     }
 
     return ListView.separated(
       key: const PageStorageKey('home_posts_list'),
       padding: const EdgeInsets.symmetric(vertical: 12),
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: posts.length,
       itemBuilder: (ctx, i) {
         final post = posts[i];

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:mediaproject/models/user.dart';
+import 'package:mediaproject/models/user_profile.dart';
 import 'package:mediaproject/constants/api_config.dart';
 
 class OshiService {

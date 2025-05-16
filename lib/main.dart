@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mediaproject/pages/image_preview_page.dart';
+import 'package:mediaproject/providers/user_profile_provider.dart';
 import 'package:mediaproject/services/auth/auth_gate.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/tweet_provider.dart';
@@ -25,6 +26,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => DatabaseProvider()),
+        ChangeNotifierProvider(create: (_) => UserProfileProvider()),
         ChangeNotifierProvider(create: (_) => OshiProvider()),
         ChangeNotifierProvider(create: (_) => TweetProvider()),
         ChangeNotifierProvider(

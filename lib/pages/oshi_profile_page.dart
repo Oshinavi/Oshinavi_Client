@@ -4,6 +4,8 @@ import 'package:mediaproject/components/bio_box.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/oshi_service.dart';
 
+import '../providers/user_profile_provider.dart';
+
 class OshiProfilePage extends StatefulWidget {
   const OshiProfilePage({super.key});
   static const routeName = '/oshi_profile';
@@ -13,6 +15,14 @@ class OshiProfilePage extends StatefulWidget {
 }
 
 class _OshiProfilePageState extends State<OshiProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    // 로그인 직후 또는 didChangeDependencies에서 프로필 로드
+    Future.microtask(() =>
+        context.read<UserProfileProvider>().loadProfile()
+    );
+  }
   Map<String, dynamic>? oshi;
   bool _isLoading = true;
   bool _initialized = false;

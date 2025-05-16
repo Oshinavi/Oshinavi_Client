@@ -50,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인 성공')),
+        const SnackBar(content: Text('로그인되었습니다')),
       );
 
       Navigator.of(context).pushAndRemoveUntil(
@@ -65,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
       hideLoadingCircle(context);
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류 발생: $e')),
+        SnackBar(content: Text('에러 발생: $e')),
       );
     }
   }
