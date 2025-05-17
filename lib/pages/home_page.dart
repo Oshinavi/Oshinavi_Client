@@ -5,10 +5,10 @@ import 'package:mediaproject/components/appbardrawer.dart';
 import 'package:mediaproject/components/post_tile.dart';
 import 'package:mediaproject/helper/navigates_pages.dart';
 import 'package:mediaproject/pages/oshi_profile_page.dart';
-import 'package:mediaproject/pages/profile_page.dart';     // ← ProfilePage
-import 'package:mediaproject/pages/register_page.dart';    // ← RegisterPage
-import 'package:mediaproject/pages/calendar_page.dart';    // ← CalendarPage
-import 'package:mediaproject/pages/login_page.dart';       // ← LoginPage
+import 'package:mediaproject/pages/profile_page.dart';
+import 'package:mediaproject/pages/register_page.dart';
+import 'package:mediaproject/pages/calendar_page.dart';
+import 'package:mediaproject/pages/login_page.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/oshi_provider.dart';
 
@@ -23,11 +23,21 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with RouteAware {
   late DatabaseProvider _databaseProvider;
   late OshiProvider _oshiProvider;
+  late ScrollController _scrollController;
+
   bool _isInitialized = false;
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   bool _initialLoadDone = false; // 초기 로딩 여부
+
   String? _oshiTweetId;
   String? _lastPushedRoute;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
 
   @override
   void didChangeDependencies() {
@@ -43,6 +53,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     routeObserver.unsubscribe(this);
     super.dispose();
   }
@@ -82,6 +93,27 @@ class _HomePageState extends State<HomePage> with RouteAware {
         _isLoading = false;
         _initialLoadDone = true;
       });
+    }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _oshiTweetId != null) {
+      _loadMorePosts();
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMore || _oshiTweetId == null) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      await _databaseProvider.loadMorePosts(_oshiTweetId!);
+    } catch (e) {
+      debugPrint("❌ 추가 포스트 로드 오류: $e");
+    } finally {
+      setState(() => _isLoadingMore = false);
     }
   }
 
@@ -163,10 +195,17 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
     return ListView.separated(
       key: const PageStorageKey('home_posts_list'),
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 12),
       physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: posts.length,
+      itemCount: posts.length + (_isLoadingMore ? 1 : 0),
       itemBuilder: (ctx, i) {
+        if (i == posts.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
         final post = posts[i];
         return PostTile(
           post: post,

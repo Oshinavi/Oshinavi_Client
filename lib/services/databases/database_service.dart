@@ -1,3 +1,5 @@
+// lib/services/databases/database_service.dart
+
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
@@ -40,11 +42,6 @@ class DatabaseService {
   // --------------------------------------------------------------------------
   Future<UserProfile?> getUserFromDB(String tweetId) async {
     final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/users/profile?tweet_id=$tweetId');
-    // final resp = await http.get(uri, headers: {'Content-Type': 'application/json'});
-
-
-
-    // 1) 저장된 JWT 토큰 읽기
     final token = await _storage.read(key: 'jwt_token');
     final headers = <String,String>{
       'Content-Type': 'application/json',
@@ -52,7 +49,6 @@ class DatabaseService {
     };
     final resp = await http.get(uri, headers: headers);
 
-    // 디버깅용 RAW JSON 출력
     print('RAW JSON ▶ ${utf8.decode(resp.bodyBytes)}');
 
     if (resp.statusCode == 200) {
@@ -63,42 +59,71 @@ class DatabaseService {
   }
 
   // --------------------------------------------------------------------------
-  // 특정 스크린네임의 최근 트윗 목록 조회
+  // 특정 스크린네임의 최근 트윗 목록 조회 (페이징 없이 전체 리스트)
   // --------------------------------------------------------------------------
   Future<List<Post>> getAllPostFromDB(String screenName) async {
-    // 1) 저장된 JWT 토큰 읽기
     final token = await _storage.read(key: 'jwt_token');
-
-    final uri = Uri.parse(
-      '${ApiConfig.host}${ApiConfig.api}/tweets/$screenName',
-    );
-
-    // 2) 헤더 구성 (토큰이 있으면 Authorization 포함)
+    final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/tweets/$screenName');
     final headers = <String, String>{
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
 
-    // 3) 간헐적 500 대응
-    Future<http.Response> _attempt() => http.get(uri, headers: headers);
-    var resp = await _attempt();
-    debugPrint(utf8.decode(resp.bodyBytes), wrapWidth: 2000);
-    if (resp.statusCode == 500) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      resp = await _attempt();
+    final resp = await http.get(uri, headers: headers);
+    debugPrint('▶ HTTP ${resp.statusCode}: ${resp.body}');
+
+    if (resp.statusCode != 200) {
+      return [];
     }
 
-    // 4) 200 이외면 빈 리스트
-    if (resp.statusCode != 200) return [];
-
-    // 5) JSON → List<Post>
     try {
       final List<dynamic> jsonList = jsonDecode(utf8.decode(resp.bodyBytes));
-
       return jsonList.map((e) => Post.fromMap(e)).toList();
     } catch (e) {
       print('❌ JSON 파싱 오류(getAllPost): $e');
       return [];
     }
+  }
+
+  // --------------------------------------------------------------------------
+  // 특정 스크린네임의 트윗 페이지 단위 조회 (cursor 기반 페이징)
+  // --------------------------------------------------------------------------
+  Future<Map<String, dynamic>> getPostPageFromDB({
+    required String screenName,
+    String? remoteCursor,
+    String? dbCursor,
+    int count = 20,
+  }) async {
+    final token = await _storage.read(key: 'jwt_token');
+    // build uri with both cursors + count
+    var uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/tweets/$screenName');
+    final qp = <String,String>{
+      'count': '$count',
+      if (remoteCursor != null) 'remote_cursor': remoteCursor,
+      if (dbCursor     != null) 'db_cursor':     dbCursor,
+    };
+    uri = uri.replace(queryParameters: qp);
+
+    debugPrint('▶ fetch tweets URI: $uri');
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+    final resp = await http.get(uri, headers: headers);
+    debugPrint('▶ HTTP ${resp.statusCode}: ${resp.body}');
+    if (resp.statusCode != 200) {
+      return {
+        'tweets':             <dynamic>[],
+        'next_remote_cursor': null,
+        'next_db_cursor':     null,
+      };
+    }
+
+    final body = jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+    return {
+      'tweets':             body['tweets'] as List<dynamic>,
+      'next_remote_cursor': body['next_remote_cursor'] as String?,
+      'next_db_cursor':     body['next_db_cursor']     as String?,
+    };
   }
 }
