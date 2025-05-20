@@ -7,8 +7,10 @@ class UserProfileProvider extends ChangeNotifier {
   final _auth       = AuthService();
   final _dbProvider = DatabaseProvider();
 
-  UserProfile? profile;
+  UserProfile? _profile;
   bool isLoading = false;
+
+  UserProfile? get profile => _profile;
 
   /// 한 번만 로드했는지를 기억하는 플래그
   bool _hasLoaded = false;
@@ -24,9 +26,13 @@ class UserProfileProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    profile = await _dbProvider.getUserProfile(tweetId);
+    _profile = await _dbProvider.getUserProfile(tweetId);
 
     isLoading = false;
+    notifyListeners();
+  }
+  void clearProfile() {
+    _profile = null;
     notifyListeners();
   }
 }

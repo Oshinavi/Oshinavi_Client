@@ -16,6 +16,9 @@ class UserProfile {
   final String? bio;
   final String? userProfileImageUrl;
   final String? userProfileBannerUrl;
+  final int followersCount;
+  final int followingCount;
+
 
   UserProfile({
     required this.tweetInternalId,
@@ -24,6 +27,8 @@ class UserProfile {
     this.bio,
     this.userProfileImageUrl,
     this.userProfileBannerUrl,
+    required this.followersCount,
+    required this.followingCount,
   });
 
   // Factory constructor to create a UserProfile object from a Map (server response)
@@ -35,6 +40,8 @@ class UserProfile {
       bio                  : map['bio'],                       // nullable
       userProfileImageUrl  : map['profile_image_url'],         // nullable
       userProfileBannerUrl : map['profile_banner_url'],        // nullable
+      followersCount       : map['followers_count'],
+      followingCount       : map['following_count'],
     );
   }
 
@@ -47,6 +54,8 @@ class UserProfile {
       'bio'               : bio,
       'profile_image_url' : userProfileImageUrl,
       'profile_banner_url': userProfileBannerUrl,
+      'followers_count'   : followersCount,
+      'following_count'   : followingCount,
     };
   }
 }

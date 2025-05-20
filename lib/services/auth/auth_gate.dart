@@ -4,6 +4,8 @@
   import 'package:mediaproject/services/auth/login_or_register.dart';
   import 'package:mediaproject/services/auth/auth_service.dart';
   import 'package:dio/dio.dart';
+  import '../../providers/user_profile_provider.dart';
+  import 'package:provider/provider.dart';
 
   class AuthGate extends StatefulWidget {
     const AuthGate({Key? key}) : super(key: key);
@@ -89,6 +91,9 @@
 
       // 로그인 성공 시
       if (_loggedIn == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.read<UserProfileProvider>().loadProfile();
+        });
         return const HomePage();
       }
 

@@ -14,6 +14,7 @@ class TweetProvider with ChangeNotifier {
   String? get generatedReply    => _generatedReply;
   bool    get isGeneratingReply => _isGeneratingReply;
 
+  /// 기존: 리플라이 전송
   Future<bool> sendReply({
     required String tweetId,
     required String replyText,
@@ -22,12 +23,13 @@ class TweetProvider with ChangeNotifier {
       tweetId: tweetId,
       replyText: replyText,
     );
-    _lastReplySuccess  = result;
-    _lastErrorMessage  = result ? null : '리플라이 전송에 실패했습니다.';
+    _lastReplySuccess = result;
+    _lastErrorMessage = result ? null : '리플라이 전송에 실패했습니다.';
     notifyListeners();
     return result;
   }
 
+  /// 기존: 자동 리플라이 생성
   Future<String?> generateAutoReply(String tweetText) async {
     _isGeneratingReply = true;
     _generatedReply    = null;
@@ -38,5 +40,18 @@ class TweetProvider with ChangeNotifier {
     _isGeneratingReply = false;
     notifyListeners();
     return reply;
+  }
+
+  /// 신규: 분류·일정 메타데이터(fetch)
+  Future<Map<String, dynamic>> fetchTweetMetadata(String tweetId) async {
+    try {
+      final meta = await _tweetService.fetchTweetMetadata(tweetId: tweetId);
+      _lastErrorMessage = null;
+      return meta;
+    } catch (e) {
+      _lastErrorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 }

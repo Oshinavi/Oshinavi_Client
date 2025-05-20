@@ -40,7 +40,6 @@ class ScheduleViewModel extends ChangeNotifier {
         ..clear()
         ..addAll(list);
     });
-    // 더 이상 여기서 에러를 다시 던지지 않습니다.
   }
 
   /// 새 스케줄 추가
@@ -51,20 +50,42 @@ class ScheduleViewModel extends ChangeNotifier {
     });
   }
 
-  /// 스케줄 수정
+  /// 스케줄 수정 (권한 에러는 뷰로 전달)
   Future<void> updateSchedule(int id, Map<String, dynamic> changes) async {
-    await _runSafe(() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
       final updated = await _api.updateSchedule(id, changes);
       final idx = _schedules.indexWhere((e) => e.id == id);
       if (idx != -1) _schedules[idx] = updated;
-    });
+    } on ApiException catch (e) {
+      // 400 권한 에러는 뷰단으로 다시 던집니다.
+      rethrow;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  /// 스케줄 삭제
+  /// 스케줄 삭제 (권한 에러는 뷰로 전달)
   Future<void> deleteSchedule(int id) async {
-    await _runSafe(() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
       await _api.deleteSchedule(id);
       _schedules.removeWhere((e) => e.id == id);
-    });
+    } on ApiException catch (e) {
+      // 400 권한 에러는 뷰단으로 다시 던집니다.
+      rethrow;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

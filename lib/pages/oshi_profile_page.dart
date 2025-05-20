@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mediaproject/components/bio_box.dart';
-import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/oshi_service.dart';
-
+import 'package:mediaproject/services/databases/database_provider.dart';
 import '../providers/user_profile_provider.dart';
+import '../models/user_profile.dart';
 
 class OshiProfilePage extends StatefulWidget {
   const OshiProfilePage({super.key});
@@ -15,31 +15,31 @@ class OshiProfilePage extends StatefulWidget {
 }
 
 class _OshiProfilePageState extends State<OshiProfilePage> {
+  bool _isLoading = true;
+  bool _initialized = false;
+  Map<String, dynamic>? oshi;
+
+  final TextEditingController _registerController = TextEditingController();
+  bool _isRegistering = false;
+
   @override
   void initState() {
     super.initState();
-    // 로그인 직후 또는 didChangeDependencies에서 프로필 로드
     Future.microtask(() =>
         context.read<UserProfileProvider>().loadProfile()
     );
   }
-  Map<String, dynamic>? oshi;
-  bool _isLoading = true;
-  bool _initialized = false;
-
-  final TextEditingController _registerController = TextEditingController();
-  bool _isRegistering = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_initialized) {
       _initialized = true;
-      Future.microtask(loadOshi);
+      Future.microtask(_loadOshi);
     }
   }
 
-  Future<void> loadOshi() async {
+  Future<void> _loadOshi() async {
     setState(() => _isLoading = true);
     final result = await OshiService().getOshi();
     if (!mounted) return;
@@ -55,35 +55,101 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
 
     setState(() => _isRegistering = true);
     final result = await OshiService().registerOshi(inputId);
-    if (!mounted) return;
     setState(() => _isRegistering = false);
 
     if (result.containsKey('error')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['error']!)),
+      // ← 반드시 await
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('오류'),
+          content: Text(result['error']!),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인')),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // 성공
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('오시 등록에 성공했어요!'))
+    );
+    await _loadOshi();
+  }
+
+  Future<void> _changeOshi() async {
+    final newId = await showDialog<String>(
+      context: context,
+      builder: (_) => _OshiChangeDialog(initial: oshi?['oshi_tweet_id'] ?? ''),
+    );
+    if (newId == null || newId.isEmpty) return;
+
+    final result = await OshiService().registerOshi(newId);
+    if (result.containsKey('error')) {
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('오류'),
+          content: Text(result['error']!),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인')),
+          ],
+        ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('오시 등록에 성공했어요!')),
-      );
-      await loadOshi();
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('오시가 변경되었습니다.')));
+      await _loadOshi();
     }
   }
 
-  String? getHighResImage(String? url) => url?.replaceAll('_normal', '_400x400');
+  Future<void> _deleteOshi() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('오시 삭제'),
+        content: const Text('정말 등록된 오시를 삭제하시겠습니까?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    final success = await OshiService().deleteOshi();
+    if (success) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('오시가 삭제되었습니다.')));
+      await _loadOshi();
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('오시 삭제에 실패했습니다.')));
+    }
+  }
+
+  String? _getHighResImage(String? url) =>
+      url?.replaceAll('_normal', '_400x400');
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // 로딩 상태
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    final screenId = oshi?['oshi_tweet_id'] ?? '';
-    final screenName = screenId.toString();
-
-    if (screenName.isEmpty) {
+    // 오시가 등록되지 않은 경우
+    final screenId = oshi?['oshi_tweet_id'] as String? ?? '';
+    if (screenId.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('오시 프로필')),
         body: Center(
@@ -104,7 +170,7 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
                     controller: _registerController,
                     decoration: const InputDecoration(
                       labelText: '트위터 ID 입력',
-                      hintText: '예: my_favorite_id',
+                      hintText: '예: cocona_nonaka',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -115,12 +181,12 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
                       onPressed: _isRegistering ? null : _registerOshi,
                       child: _isRegistering
                           ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white
-                          )
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                           : const Text('오시 등록'),
                     ),
@@ -133,78 +199,113 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
       );
     }
 
-    return FutureBuilder(
-      future: Provider.of<DatabaseProvider>(context, listen: false).getUserProfile(screenName),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        if (!snapshot.hasData) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('오시 프로필')),
-            body: const Center(child: Text('오시 정보를 불러오는 데 실패했습니다.')),
+    // 오시가 등록된 경우
+    return FutureBuilder<UserProfile?>(
+      future: context.read<DatabaseProvider>().getUserProfile(screenId),
+      builder: (ctx, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
         }
-
-        final user = snapshot.data!;
-        final profileImageUrl = getHighResImage(user.userProfileImageUrl);
+        final user = snap.data!;
         final bannerUrl = user.userProfileBannerUrl;
+        final avatarUrl = _getHighResImage(user.userProfileImageUrl);
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('오시 프로필'),
-            centerTitle: true,
-            backgroundColor: theme.colorScheme.surface,
-            foregroundColor: theme.colorScheme.primary,
-          ),
+          appBar: AppBar(title: const Text('오시 프로필')),
           body: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 배너 + 프로필 사진
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    SizedBox(
-                      height: 140,
+                    // 배너
+                    Container(
+                      height: 200,
                       width: double.infinity,
+                      color: theme.colorScheme.surfaceContainerHighest,
                       child: bannerUrl != null
-                          ? Image.network(
-                          bannerUrl,
-                          fit: BoxFit.cover
-                      )
-                          : Container(color: theme.colorScheme.surfaceContainerHighest),
+                          ? Image.network(bannerUrl, fit: BoxFit.cover, width: double.infinity)
+                          : null,
                     ),
+                    // 프로필 이미지
                     Positioned(
-                      bottom: -40,
-                      left: 20,
+                      top: 150,
+                      left: 16,
                       child: CircleAvatar(
                         radius: 48,
-                        backgroundImage: profileImageUrl != null ? NetworkImage(profileImageUrl) : null,
+                        backgroundColor: Colors.white,
+                        backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
                       ),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 60),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user.username,
-                          style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface
-                          )
+                      // 이름 · 아이디
+                      Text(
+                        user.username,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
-                      Text('@${user.tweetId}',
-                          style: TextStyle(
-                              fontSize: 15,
-                              color: theme.colorScheme.onSurface.withAlpha(153),
-                          )
+                      Text(
+                        '@${user.tweetId}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
+
+                      // 팔로우·변경·삭제 버튼
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              shape: const StadiumBorder(),
+                              backgroundColor: theme.colorScheme.onPrimary,
+                              foregroundColor: theme.colorScheme.primary,
+                            ),
+                            child: const Text('팔로우 중'),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: _changeOshi,
+                            style: OutlinedButton.styleFrom(shape: const StadiumBorder()),
+                            child: const Text('변경'),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: _deleteOshi,
+                            style: OutlinedButton.styleFrom(
+                              shape: const StadiumBorder(),
+                              side: BorderSide(color: Colors.redAccent),
+                            ),
+                            child: const Text('삭제', style: TextStyle(color: Colors.redAccent)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 팔로잉·팔로워 수 (예시)
+                      Row(
+                        children: [
+                          Text('${user.followingCount} 팔로잉', style: TextStyle(fontWeight: FontWeight.bold)),
+                          SizedBox(width: 16),
+                          Text('${user.followersCount} 팔로워', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 소개
                       BioBox(text: user.bio),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -213,6 +314,43 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
           ),
         );
       },
+    );
+  }
+}
+
+/// 오시 변경 다이얼로그
+class _OshiChangeDialog extends StatefulWidget {
+  final String initial;
+  const _OshiChangeDialog({required this.initial});
+
+  @override
+  State<_OshiChangeDialog> createState() => _OshiChangeDialogState();
+}
+
+class _OshiChangeDialogState extends State<_OshiChangeDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initial);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('오시 변경'),
+      content: TextField(
+        controller: _controller,
+        decoration: const InputDecoration(
+          labelText: '트위터 ID',
+          hintText: '예: cocona_nonaka',
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+        TextButton(onPressed: () => Navigator.pop(context, _controller.text.trim()), child: const Text('변경')),
+      ],
     );
   }
 }

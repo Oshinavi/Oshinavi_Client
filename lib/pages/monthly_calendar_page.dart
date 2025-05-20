@@ -1,8 +1,10 @@
+// lib/pages/monthly_calendar_page.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:custom_calendar/custom_calendar.dart';
 import 'package:custom_calendar/src/utils/extension.dart';
+import 'package:mediaproject/pages/event_detail_page.dart';
 import 'package:intl/intl.dart';
 
 import '../models/schedule.dart';
@@ -54,7 +56,6 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
       onTap: onTap,
     );
   }
-
   Future<void> _onAdd() async {
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
@@ -84,7 +85,7 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
                   onChanged: (v) => setState(() => selectedCategory = v!),
                 ),
                 const SizedBox(height: 8),
-                TextField(controller: twtCtrl, decoration: const InputDecoration(labelText: '관련 트위터 스크린네임')),
+                TextField(controller: twtCtrl, decoration: const InputDecoration(labelText: '관련 오시 id(@id)')),
                 const SizedBox(height: 8),
                 TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '설명'), maxLines: 2),
                 const SizedBox(height: 12),
@@ -139,168 +140,14 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
     }
   }
 
-  Future<void> _onEdit(Schedule s) async {
-    final titleCtrl = TextEditingController(text: s.title);
-    final descCtrl = TextEditingController(text: s.description);
-    final twtCtrl = TextEditingController(text: s.relatedTwitterInternalId);
-    DateTime startAt = s.startAt;
-    DateTime endAt = s.endAt;
-
-    const categories = ['일반', '방송', '라디오', '라이브', '음반', '굿즈', '영상', '게임'];
-    String selectedCategory = s.category;
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(builder: (ctx, setState) {
-          return AlertDialog(
-            title: const Text('이벤트 수정'),
-            content: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TextField(controller: titleCtrl,
-                    decoration: const InputDecoration(labelText: '제목')),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  decoration: const InputDecoration(labelText: '카테고리'),
-                  items: categories.map((c) =>
-                      DropdownMenuItem(value: c, child: Text(c))).toList(),
-                  onChanged: (v) => setState(() => selectedCategory = v!),
-                ),
-                const SizedBox(height: 8),
-                TextField(controller: twtCtrl,
-                    decoration: const InputDecoration(
-                        labelText: '관련 트위터 스크린네임')),
-                const SizedBox(height: 8),
-                TextField(controller: descCtrl,
-                    decoration: const InputDecoration(labelText: '설명'),
-                    maxLines: 2),
-                const SizedBox(height: 12),
-                _buildDateTimeField('시작 일시', startAt, () async {
-                  final d = await showDatePicker(context: ctx,
-                      initialDate: startAt,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100));
-                  if (d == null) return;
-                  final t = await showTimePicker(context: ctx,
-                      initialTime: TimeOfDay.fromDateTime(startAt));
-                  if (t == null) return;
-                  setState(() {
-                    startAt =
-                        DateTime(d.year, d.month, d.day, t.hour, t.minute);
-                    if (endAt.isBefore(startAt)) {
-                      endAt = startAt.add(const Duration(hours: 1));
-                    }
-                  });
-                }),
-                const SizedBox(height: 8),
-                _buildDateTimeField('종료 일시', endAt, () async {
-                  final d = await showDatePicker(context: ctx,
-                      initialDate: endAt,
-                      firstDate: startAt,
-                      lastDate: DateTime(2100));
-                  if (d == null) return;
-                  final t = await showTimePicker(
-                      context: ctx, initialTime: TimeOfDay.fromDateTime(endAt));
-                  if (t == null) return;
-                  setState(() {
-                    endAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
-                  });
-                }),
-              ]),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('취소')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('저장')),
-            ],
-          );
-        });
-      },
-    );
-
-    if (ok != true) return;
-
-    final changes = {
-      'title': titleCtrl.text,
-      'category': selectedCategory,
-      'start_at': startAt.toIso8601String(),
-      'end_at': endAt.toIso8601String(),
-      'description': descCtrl.text,
-      'related_twitter_screen_name': twtCtrl.text,
-    };
-
-    try {
-      await context.read<ScheduleViewModel>().updateSchedule(s.id, changes);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('일정이 수정되었습니다.')));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('수정 실패: $e')));
-    }
-  }
-
-  Future<void> _confirmDelete(int id) async {
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('정말 삭제하시겠습니까?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-    if (yes != true) return;
-
-    try {
-      await context.read<ScheduleViewModel>().deleteSchedule(id);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('일정이 삭제되었습니다.')));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
-    }
-  }
-
   Future<void> _onEventTap(Event e) async {
-    final s = e.data as Schedule?;
-    if (s == null) return;
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(s.title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('카테고리: ${s.category}'),
-            Text('관련 트위터: ${s.relatedTwitterInternalId ?? '-'}'),
-            Text('시작: ${DateFormat('yyyy.MM.dd HH:mm').format(s.startAt)}'),
-            Text('종료: ${DateFormat('yyyy.MM.dd HH:mm').format(s.endAt)}'),
-            const SizedBox(height: 8),
-            Text(s.description),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _onEdit(s); // 이미 존재하는 함수
-            },
-            child: const Text('수정'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _confirmDelete(s.id); // 이미 존재하는 함수
-            },
-            child: const Text('삭제', style: TextStyle(color: Colors.red)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('닫기'),
-          ),
-        ],
-      ),
+    final s = e.data as Schedule;
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => EventDetailPage(schedule: s)),
     );
+    if (changed == true) {
+      await context.read<ScheduleViewModel>().loadSchedules();
+    }
   }
 
   @override
@@ -331,16 +178,8 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
           if (vm.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (vm.error != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('에러 발생: ${vm.error}')),
-              );
-            });
-          }
-
           final events = vm.schedules.map((s) {
-            final key = '${s.relatedTwitterInternalId}_${s.id}'; // 고유성 확보
+            final key = '${s.relatedTwitterInternalId}_${s.id}';
             final color = _colorGenerator.getColor(key);
             return Event(
               startTime: s.startAt,
@@ -378,18 +217,16 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
               dayHeaderBuilder: (date) {
                 final isInCurrentMonth = date.month == _currentMonth.month;
                 final isToday = DateUtils.isSameDay(date, DateTime.now());
-
                 return DefaultMonthDayHeader(
                   text: date.day.toString(),
                   isToday: isToday,
-                  textColor: isInCurrentMonth
-                      ? null // 현재 월이면 기본 색상
-                      : Theme.of(context).disabledColor, // 그 외는 회색 처리
+                  textColor: isInCurrentMonth ? null : Theme.of(context).disabledColor,
                   todayTextColor: Theme.of(context).colorScheme.onPrimary,
                   todayBackgroundColor: Theme.of(context).colorScheme.primary,
                 );
               },
               dayEventBuilder: (event, w, h) {
+                final s = event.data as Schedule;
                 final idx = event.daysIndex ?? 0;
                 final totalDays = ((event.effectiveEndTime ?? event.endTime)!
                     .difference(event.effectiveStartTime ?? event.startTime)
@@ -406,7 +243,18 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
                 final height = h ?? 0;
 
                 return GestureDetector(
-                  onTap: () => _onEventTap(event),
+                  onTap: () async {
+                    // ① 상세 페이지로 이동
+                    final changed = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => EventDetailPage(schedule: s),
+                      ),
+                    );
+                    // ② true 이면 다시 불러오기
+                    if (changed == true) {
+                      await context.read<ScheduleViewModel>().loadSchedules();
+                    }
+                  },
                   behavior: HitTestBehavior.opaque,
                   child: SizedBox(
                     width: width,
@@ -417,7 +265,7 @@ class _MonthlyCalendarPageState extends State<MonthlyCalendarPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         alignment: Alignment.centerLeft,
                         decoration: BoxDecoration(
-                          color: event.color, // 전체 배경에 색상 적용
+                          color: event.color,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

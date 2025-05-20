@@ -23,8 +23,9 @@ class DioClient {
   DioClient._internal()
       : _dio = Dio(BaseOptions(
     baseUrl: 'http://localhost:8000',
-    connectTimeout: const Duration(milliseconds: 5000),
-    receiveTimeout: const Duration(milliseconds: 3000),
+    connectTimeout: const Duration(milliseconds: 50000),
+    receiveTimeout: const Duration(milliseconds: 300000),
+    sendTimeout: const Duration(milliseconds: 50000),
     contentType: 'application/json',
   )) {
     // 1) 쿠키 저장소 (쿠키 기반 리프레시 토큰 전송을 위해)

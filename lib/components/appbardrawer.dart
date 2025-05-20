@@ -1,3 +1,5 @@
+// lib/components/appbardrawer.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mediaproject/components/appbardrawertile.dart';
@@ -12,18 +14,36 @@ import 'package:mediaproject/main.dart';
 
 import '../providers/user_profile_provider.dart';
 
-class AppBarDrawer extends StatelessWidget {
+class AppBarDrawer extends StatefulWidget {
   AppBarDrawer({Key? key}) : super(key: key);
+
+  @override
+  State<AppBarDrawer> createState() => _AppBarDrawerState();
+}
+
+class _AppBarDrawerState extends State<AppBarDrawer> {
   final _auth = AuthService();
 
-  Future<void> logout(BuildContext context) async {
+  @override
+  void initState() {
+    super.initState();
+    // ① 드로어 최초 생성 시 프로필 한 번 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProfileProvider>().loadProfile();
+    });
+  }
+
+  Future<void> _logout(BuildContext context) async {
     // 1) 로컬 토큰 정리
     await _auth.logout();
+
+    // ② 로그아웃 시 프로필 클리어
+    context.read<UserProfileProvider>().clearProfile();
 
     // 2) 드로어 닫기
     Navigator.of(context).pop();
 
-    // 3) 다음 프레임에 루트 내비게이터에서 스택 초기화 후 로그인 화면으로 이동
+    // 3) 루트 스택 초기화 → 로그인 화면으로
     WidgetsBinding.instance.addPostFrameCallback((_) {
       navigatorKey.currentState!
           .pushAndRemoveUntil(
@@ -32,12 +52,8 @@ class AppBarDrawer extends StatelessWidget {
       );
     });
   }
-
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<UserProfileProvider>().loadProfile();
-    });
     final colors    = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.titleMedium!;
 
@@ -50,8 +66,8 @@ class AppBarDrawer extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
 
-              // 프로필 헤더 컴포넌트
-              const ProfileHeader(),
+              // 프로필 헤더 컴포넌트 (reads from provider)
+              ProfileHeader(),
 
               const SizedBox(height: 20),
               Divider(color: colors.secondary),
@@ -76,7 +92,9 @@ class AppBarDrawer extends StatelessWidget {
                   if (tweetId != null) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       navigatorKey.currentState!.push(
-                        MaterialPageRoute(builder: (_) => ProfilePage(tweetId: tweetId)),
+                        MaterialPageRoute(
+                          builder: (_) => ProfilePage(tweetId: tweetId),
+                        ),
                       );
                     });
                   } else {
@@ -139,7 +157,7 @@ class AppBarDrawer extends StatelessWidget {
                 icon: Icons.logout,
                 textStyle: textStyle,
                 iconColor: colors.error,
-                onTap: () => logout(context),
+                onTap: () => _logout(context),
               ),
             ],
           ),

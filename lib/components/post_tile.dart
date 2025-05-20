@@ -4,6 +4,7 @@ import 'package:characters/characters.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'loading_circle.dart';
 
 import '../models/post.dart';
 import '../services/oshi_provider.dart';
@@ -174,115 +175,160 @@ class _PostTileState extends State<PostTile> {
   }
 
   Future<void> _onExtractSchedule() async {
-    final sd = widget.post.includedStartDate;
-    final ed = widget.post.includedEndDate;
-    if (sd == null && ed == null) {
-      _showDialog("알림", "이 포스트에는 일정 정보가 없습니다");
-      return;
-    }
-    DateTime startAt = sd ?? ed!.subtract(const Duration(hours: 1));
-    DateTime endAt   = ed ?? sd!.add(const Duration(hours: 1));
-    final titleCtrl = TextEditingController(text: '');
-    final descCtrl  = TextEditingController(text: '');
-    final twtCtrl   = TextEditingController(text: widget.post.uid);
+    // ① 로딩 서클 표시
+    showLoadingCircle(context);
 
-    const categories = [
-      '일반', '방송', '라디오', '라이브',
-      '음반', '굿즈', '영상', '게임',
-    ];
-    String selectedCategory = categories.contains(widget.post.tweetAbout)
-        ? widget.post.tweetAbout
-        : categories.first;
+    try {
+      // ② 메타데이터 가져오기
+      final tweetProvider = Provider.of<TweetProvider>(context, listen: false);
+      final meta = await tweetProvider.fetchTweetMetadata(widget.post.id);
 
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(builder: (ctx, setState) {
+      final category = meta['category'] as String?;
+      final rawStart = meta['start'] as String?;
+      final rawEnd   = meta['end']   as String?;
+      final titleMeta = meta['schedule_title'] as String?;
+      final descMeta = meta['schedule_description'] as String?;
+
+      String? sanitize(String? s) {
+        if (s == null) return null;
+        final t = s.trim().toLowerCase();
+        return (t == 'none') ? null : s.trim();
+      }
+      final startStr = sanitize(rawStart);
+      final endStr   = sanitize(rawEnd);
+
+      // ③ 일정 정보가 없거나, 분류가 "일반" 이면 안내 다이얼로그 후 종료
+      if (category == '일반' || (startStr == null && endStr == null)) {
+        hideLoadingCircle(context);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showDialog("알림", "이 포스트에는 일정 정보가 없습니다");
+        });
+        return;
+      }
+
+      // ④ 날짜 파싱 유틸
+      DateTime parseDate(String s) {
+        final normalized = s.replaceAll('.', '-');
+        return DateFormat('yyyy-MM-dd HH:mm:ss').parse(normalized);
+      }
+
+      // ⑤ start/end 결정 (하나만 있으면 ±1시간)
+      DateTime startAt = startStr != null
+          ? parseDate(startStr)
+          : parseDate(endStr!).subtract(const Duration(hours: 1));
+      DateTime endAt = endStr != null
+          ? parseDate(endStr)
+          : parseDate(startStr!).add(const Duration(hours: 1));
+
+      // ⑥ 다이얼로그용 컨트롤러 & 초기값
+      final titleCtrl = TextEditingController(text: titleMeta ?? "");
+      final descCtrl  = TextEditingController(text: descMeta ?? "");
+      final twtCtrl   = TextEditingController(text: widget.post.uid);
+      const categories = ['일반','방송','라디오','라이브','음반','굿즈','영상','게임'];
+      String selectedCategory = categories.contains(category) ? category! : categories.first;
+
+      // ⑦ 사용자에게 일정 정보 입력받기
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          DateTime tempStart = startAt;
+          DateTime tempEnd   = endAt;
+
           Widget _buildDateTimeField(String label, DateTime value, VoidCallback onTap) {
             return TextField(
               readOnly: true,
-              decoration: InputDecoration(
-                labelText: label,
-                hintText: DateFormat('yyyy.MM.dd HH:mm').format(value),
+              controller: TextEditingController(
+                text: DateFormat('yyyy.MM.dd HH:mm').format(value),
               ),
-              controller: TextEditingController(text: DateFormat('yyyy.MM.dd HH:mm').format(value)),
+              decoration: InputDecoration(labelText: label),
               onTap: onTap,
             );
           }
 
-          return AlertDialog(
-            title: const Text('일정 등록'),
-            content: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '제목')),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  decoration: const InputDecoration(labelText: '카테고리'),
-                  items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                  onChanged: (v) => setState(() => selectedCategory = v ?? categories.first),
-                ),
-                const SizedBox(height: 8),
-                TextField(controller: twtCtrl, decoration: const InputDecoration(labelText: '트위터 스크린네임')),
-                const SizedBox(height: 8),
-                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '설명'), maxLines: 2),
-                const SizedBox(height: 12),
-                _buildDateTimeField('시작 일시', startAt, () async {
-                  final d = await showDatePicker(
-                    context: ctx, initialDate: startAt, firstDate: DateTime(2000), lastDate: DateTime(2100),
-                  );
-                  if (d == null) return;
-                  final t = await showTimePicker(
-                    context: ctx, initialTime: TimeOfDay.fromDateTime(startAt),
-                  );
-                  if (t == null) return;
-                  setState(() {
-                    startAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
-                    if (endAt.isBefore(startAt)) endAt = startAt.add(const Duration(hours: 1));
-                  });
-                }),
-                const SizedBox(height: 8),
-                _buildDateTimeField('종료 일시', endAt, () async {
-                  final d = await showDatePicker(
-                    context: ctx, initialDate: endAt, firstDate: startAt, lastDate: DateTime(2100),
-                  );
-                  if (d == null) return;
-                  final t = await showTimePicker(
-                    context: ctx, initialTime: TimeOfDay.fromDateTime(endAt),
-                  );
-                  if (t == null) return;
-                  setState(() => endAt = DateTime(d.year, d.month, d.day, t.hour, t.minute));
-                }),
-              ]),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-              TextButton(
-                onPressed: titleCtrl.text.isNotEmpty ? () => Navigator.pop(ctx, true) : null,
-                child: const Text('등록'),
+          return StatefulBuilder(builder: (ctx, setState) {
+            return AlertDialog(
+              title: const Text('일정 등록'),
+              content: SingleChildScrollView(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: '제목')),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: const InputDecoration(labelText: '카테고리'),
+                    items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                    onChanged: (v) => setState(() => selectedCategory = v ?? categories.first),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(controller: twtCtrl, decoration: const InputDecoration(labelText: '오시 트위터 ID(@id)')),
+                  const SizedBox(height: 8),
+                  TextField(controller: descCtrl, decoration: const InputDecoration(labelText: '설명'), maxLines: 2),
+                  const SizedBox(height: 12),
+                  _buildDateTimeField('시작 일시', tempStart, () async {
+                    final d = await showDatePicker(
+                      context: ctx, initialDate: tempStart, firstDate: DateTime(2000), lastDate: DateTime(2100),
+                    );
+                    if (d == null) return;
+                    final t = await showTimePicker(
+                      context: ctx, initialTime: TimeOfDay.fromDateTime(tempStart),
+                    );
+                    if (t == null) return;
+                    setState(() {
+                      tempStart = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+                      if (tempEnd.isBefore(tempStart)) tempEnd = tempStart.add(const Duration(hours: 1));
+                    });
+                  }),
+                  const SizedBox(height: 8),
+                  _buildDateTimeField('종료 일시', tempEnd, () async {
+                    final d = await showDatePicker(
+                      context: ctx, initialDate: tempEnd, firstDate: tempStart, lastDate: DateTime(2100),
+                    );
+                    if (d == null) return;
+                    final t = await showTimePicker(
+                      context: ctx, initialTime: TimeOfDay.fromDateTime(tempEnd),
+                    );
+                    if (t == null) return;
+                    setState(() {
+                      tempEnd = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+                    });
+                  }),
+                ]),
               ),
-            ],
-          );
-        });
-      },
-    );
-    if (ok != true) return;
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('등록')),
+              ],
+            );
+          });
+        },
+      );
+      if (ok != true) return;
 
-    final vm = context.read<ScheduleViewModel>();
-    await vm.addSchedule(Schedule(
-      id: 0,
-      title: titleCtrl.text,
-      category: selectedCategory,
-      startAt: startAt,
-      endAt: endAt,
-      description: descCtrl.text,
-      relatedTwitterInternalId: twtCtrl.text,
-      createdByUserId: 0,
-    ));
+      // ⑧ ViewModel 에 저장
+      final vm = context.read<ScheduleViewModel>();
+      await vm.addSchedule(Schedule(
+        id: 0,
+        title: titleCtrl.text,
+        category: selectedCategory,
+        startAt: startAt,
+        endAt: endAt,
+        description: descCtrl.text,
+        relatedTwitterInternalId: twtCtrl.text,
+        createdByUserId: 0,
+      ));
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('일정이 등록되었습니다.')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('일정이 등록되었습니다.')),
+      );
+
+    } catch (e) {
+      // ⑨ 에러 시 스낵바
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("일정 정보 로드 실패: ${e.toString()}")),
+      );
+    } finally {
+      // ⑩ 항상 로딩 서클 닫기
+      hideLoadingCircle(context);
+    }
   }
 
   void _showOptions() {

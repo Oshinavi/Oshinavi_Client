@@ -18,11 +18,11 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _auth = AuthService();
 
-  final TextEditingController nameController      = TextEditingController();
-  final TextEditingController emailController     = TextEditingController();
-  final TextEditingController pwController        = TextEditingController();
-  final TextEditingController confirmPwController = TextEditingController();
-  final TextEditingController tweetIdController   = TextEditingController();
+  final TextEditingController nameController        = TextEditingController();
+  final TextEditingController emailController       = TextEditingController();
+  final TextEditingController pwController          = TextEditingController();
+  final TextEditingController confirmPwController   = TextEditingController();
+  final TextEditingController tweetIdController     = TextEditingController();
   final TextEditingController ct0Controller         = TextEditingController();
   final TextEditingController authTokenController   = TextEditingController();
 
@@ -81,19 +81,12 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    final ct0 = ct0Controller.text.trim();
-    if (ct0.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ ct0 값을 입력하세요.')),
-      );
-      setState(() => _isLoading = false);
-      return;
-    }
-
+    // 4) ct0/auth_token 검증
+    final ct0      = ct0Controller.text.trim();
     final authToken = authTokenController.text.trim();
-    if (authToken.isEmpty) {
+    if (ct0.isEmpty || authToken.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ auth_token 값을 입력하세요.')),
+        const SnackBar(content: Text('❌ ct0/auth_token 값을 모두 입력하세요.')),
       );
       setState(() => _isLoading = false);
       return;
@@ -110,13 +103,14 @@ class _RegisterPageState extends State<RegisterPage> {
         ct0:        ct0,
         authToken:  authToken,
       );
-      // async 이후에는 mounted 체크
       if (!mounted) return;
       hideLoadingCircle(context);
       setState(() => _isLoading = false);
 
+      final status = result['statusCode'] as int? ?? 0;
+      final err    = result['error'] as String?;
       // 404 Not Found: 존재하지 않는 트위터 유저
-      if (result['statusCode'] == 404) {
+      if (status == 404) {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -132,14 +126,13 @@ class _RegisterPageState extends State<RegisterPage> {
         );
         return;
       }
-
       // 409 Conflict: 중복 에러
-      if (result['statusCode'] == 409) {
+      if (status == 409) {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
             title: const Text('회원가입 실패'),
-            content: Text(result['error']),
+            content: Text(err ?? '이미 가입된 사용자입니다.'),
             actions: [
               TextButton(
                 child: const Text('확인'),
@@ -150,23 +143,24 @@ class _RegisterPageState extends State<RegisterPage> {
         );
         return;
       }
-
-      // 성공 토큰 리턴된 경우
-      if (result.containsKey('token')) {
+      // 201 Created + access_token 있는 경우 → 성공
+      if (status == 201 && result['access_token'] != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ 회원가입 및 로그인 성공')),
         );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-              settings: RouteSettings(name: HomePage.routeName),
-              builder: (_) => const HomePage()),
+            settings: const RouteSettings(name: HomePage.routeName),
+            builder: (_) => const HomePage(),
+          ),
         );
-      } else {
-        // 기타 에러는 Snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['error'] ?? '회원가입 실패')),
-        );
+        return;
       }
+
+      // 그 외: 에러 메시지
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err ?? '회원가입 실패')),
+      );
     } catch (e) {
       hideLoadingCircle(context);
       setState(() => _isLoading = false);
@@ -213,17 +207,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 10),
                 TextFieldLogin(controller: tweetIdController,   hintText: "트위터 id(@ 제외)를 입력하세요", obscureText: false),
                 const SizedBox(height: 10),
-                TextFieldLogin(
-                  controller: ct0Controller,
-                  hintText: "ct0 값을 입력하세요",
-                  obscureText: false,
-                ),
+                TextFieldLogin(controller: ct0Controller,       hintText: "ct0 값을 입력하세요",             obscureText: false),
                 const SizedBox(height: 10),
-                TextFieldLogin(
-                  controller: authTokenController,
-                  hintText: "auth_token 값을 입력하세요",
-                  obscureText: true,
-                ),
+                TextFieldLogin(controller: authTokenController, hintText: "auth_token 값을 입력하세요",       obscureText: true),
                 const SizedBox(height: 25),
 
                 SimpleButton(

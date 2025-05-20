@@ -1,3 +1,4 @@
+// lib/pages/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mediaproject/main.dart';
@@ -11,6 +12,8 @@ import 'package:mediaproject/pages/calendar_page.dart';
 import 'package:mediaproject/pages/login_page.dart';
 import 'package:mediaproject/services/databases/database_provider.dart';
 import 'package:mediaproject/services/oshi_provider.dart';
+
+import '../providers/user_profile_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -28,7 +31,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
   bool _isInitialized = false;
   bool _isLoading = false;
   bool _isLoadingMore = false;
-  bool _initialLoadDone = false; // 초기 로딩 여부
+  bool _initialLoadDone = false;
 
   String? _oshiTweetId;
   String? _lastPushedRoute;
@@ -37,7 +40,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProfileProvider>().loadProfile();
+    });
   }
+
 
   @override
   void didChangeDependencies() {
@@ -65,6 +72,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   void didPopNext() {
+    context.read<UserProfileProvider>().loadProfile();
     const reloadFrom = {
       OshiProfilePage.routeName,
       ProfilePage.routeName,
@@ -92,7 +100,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
       setState(() {
         _isLoading = false;
         _initialLoadDone = true;
-      });
+      }
+      );
+      await context.read<UserProfileProvider>().loadProfile();
     }
   }
 
@@ -125,6 +135,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       drawer: AppBarDrawer(),
+      onDrawerChanged: (isOpened) {
+        if (isOpened) {
+          context.read<UserProfileProvider>().loadProfile();
+        }
+      },
       appBar: AppBar(title: const Text("홈")),
       body: RefreshIndicator(
         onRefresh: _loadOshiAndPosts,
@@ -134,8 +149,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
           physics: const AlwaysScrollableScrollPhysics(),
           children: const [
             SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator())),
+              height: 200,
+              child: Center(child: CircularProgressIndicator()),
+            ),
           ],
         )
             : _buildBody(theme, posts),
@@ -144,32 +160,46 @@ class _HomePageState extends State<HomePage> with RouteAware {
   }
 
   Widget _buildBody(ThemeData theme, List posts) {
+    final availableHeight = MediaQuery.of(context).size.height -
+        kToolbarHeight -
+        MediaQuery.of(context).padding.top;
+
+    // ① 오시 미등록
     if (_oshiTweetId == null || _oshiTweetId!.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          const SizedBox(height: 80),
-          Icon(Icons.favorite_border, size: 48, color: theme.primaryColor),
-          const SizedBox(height: 12),
-          Text('아직 등록된 오시가 없어요', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 16),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  settings: RouteSettings(name: OshiProfilePage.routeName),
-                  builder: (_) => const OshiProfilePage(),
-                ),
-              ),
-              icon: const Icon(Icons.person_add),
-              label: const Text('오시 등록하러 가기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: theme.colorScheme.onPrimary,
-                shape: const StadiumBorder(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                elevation: 2,
+          SizedBox(
+            height: availableHeight,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.favorite_border, size: 48, color: theme.primaryColor),
+                  const SizedBox(height: 12),
+                  Text('아직 등록된 오시가 없어요', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(name: OshiProfilePage.routeName),
+                          builder: (_) => const OshiProfilePage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('오시 등록하러 가기'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      elevation: 2,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -177,22 +207,29 @@ class _HomePageState extends State<HomePage> with RouteAware {
       );
     }
 
+    // ② 오시는 등록됐지만 포스트가 없는 상태
     if (posts.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          const SizedBox(height: 80),
-          Center(
-            child: Text(
-              "트윗이 없습니다...",
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurface.withAlpha(153)),
+          SizedBox(
+            height: availableHeight,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.chat_bubble_outline, size: 48, color: theme.primaryColor),
+                  const SizedBox(height: 12),
+                  Text('트윗이 없습니다...', style: theme.textTheme.titleMedium),
+                ],
+              ),
             ),
           ),
         ],
       );
     }
 
+    // ③ 포스트가 있을 때
     return ListView.separated(
       key: const PageStorageKey('home_posts_list'),
       controller: _scrollController,
