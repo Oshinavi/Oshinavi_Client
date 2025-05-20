@@ -4,15 +4,15 @@ import 'package:characters/characters.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/reply.dart';
-import 'loading_circle.dart';
 
+import '../models/reply.dart';
 import '../models/post.dart';
 import '../services/oshi_provider.dart';
 import '../services/tweet_provider.dart';
 import '../viewmodels/schedule_view_model.dart';
 import '../models/schedule.dart';
 import '../pages/image_preview_page.dart';
+import 'loading_circle.dart';
 
 class PostTile extends StatefulWidget {
   final Post post;
@@ -45,7 +45,7 @@ class _PostTileState extends State<PostTile> {
   bool _isSendingReply = false;
   bool _showOriginal = false;
 
-  /// ① 이미지 URL 리스트를 받아 1~4개 격자로 배치해 주는 헬퍼
+  /// 이미지 URL 리스트를 받아 1~4개 격자로 배치해 주는 헬퍼
   Widget _buildImageGrid(List<String> urls) {
     final display = urls.take(4).toList();
     return Padding(
@@ -86,6 +86,7 @@ class _PostTileState extends State<PostTile> {
     );
   }
 
+  /// 입력 텍스트 길이(바이트) 계산
   void _updateLength(String text) {
     int count = 0;
     for (final ch in text.characters) {
@@ -94,11 +95,30 @@ class _PostTileState extends State<PostTile> {
     setState(() => _replyByteCount = count);
   }
 
+  /// 자동생성 버튼 눌렀을 때: TweetProvider 에 저장된 전체 리플라이 중
+  /// 인덱스 1번(두 번째)만 제외하고 contexts 로 넘겨서 LLM 호출
   Future<void> _handleAutoReply() async {
     setState(() => _isLoadingAutoReply = true);
     try {
       final tweetProvider = Provider.of<TweetProvider>(context, listen: false);
-      final reply = await tweetProvider.generateAutoReply(widget.post.message);
+
+      // 1) 저장된 모든 리플라이 가져오기
+      final allReplies = tweetProvider.allReplies;
+
+      // 2) 두 번째(인덱스1) 리플라이만 제외한 컨텍스트 리스트 생성
+      final contexts = <String>[];
+      for (var i = 0; i < allReplies.length; i++) {
+        if (i == 1) continue;
+        contexts.add(allReplies[i].text);
+      }
+
+      // 3) LLM 호출 (signature 변경: contexts 인자 추가)
+      final reply = await tweetProvider.generateAutoReply(
+        tweetId: widget.post.id.toString(),
+        tweetText: widget.post.message,
+        contexts: contexts,
+      );
+
       if (!mounted) return;
       if (reply != null) {
         _replyController.clear();
@@ -122,6 +142,7 @@ class _PostTileState extends State<PostTile> {
     }
   }
 
+  /// 직접 전송 버튼 로직 (변경 없음)
   Future<void> _handleReplySubmit() async {
     final replyText = _replyController.text.trim();
     if (_replyByteCount > 280) {
@@ -137,14 +158,11 @@ class _PostTileState extends State<PostTile> {
       );
       if (!mounted) return;
 
-      // clear input
       _replyController.clear();
       setState(() => _replyByteCount = 0);
       _showDialog("완료", "리플라이가 성공적으로 전송되었습니다.");
 
-      // notify parent
-      widget.onReplySent?.call(newReply);    // ← NEW
-
+      widget.onReplySent?.call(newReply);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

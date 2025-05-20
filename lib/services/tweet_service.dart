@@ -43,15 +43,22 @@ class TweetService {
   }
 
   /// 기존: 자동 리플라이 생성
-  Future<String?> generateAutoReply(String tweetText) async {
-    final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/tweets/reply/auto_generate');
+  Future<String?> generateAutoReply({
+    required String tweetId,
+    required String tweetText,
+    required List<String> contexts,
+  }) async {
+    final uri = Uri.parse(
+        '${ApiConfig.host}${ApiConfig.api}/tweets/$tweetId/reply/auto_generate'
+    );
     final headers = await _authHeaders();
 
-    final resp = await http.post(
-      uri,
-      headers: headers,
-      body: jsonEncode({'tweet_text': tweetText}),
-    );
+    final body = jsonEncode({
+      'tweet_text': tweetText,
+      'contexts': contexts,
+    });
+
+    final resp = await http.post(uri, headers: headers, body: body);
     if (resp.statusCode != 200 ||
         !(resp.headers['content-type'] ?? '').contains('application/json')) {
       return null;

@@ -33,12 +33,21 @@ class TweetProvider with ChangeNotifier {
   }
 
   /// 기존: 자동 리플라이 생성
-  Future<String?> generateAutoReply(String tweetText) async {
+  Future<String?> generateAutoReply({
+    required String tweetId,
+    required String tweetText,
+    required List<String> contexts,
+  }) async {
     _isGeneratingReply = true;
     _generatedReply    = null;
     notifyListeners();
 
-    final reply = await _tweetService.generateAutoReply(tweetText);
+    final reply = await _tweetService.generateAutoReply(
+      tweetId: tweetId,
+      tweetText: tweetText,
+      contexts: contexts,
+    );
+
     _generatedReply    = reply;
     _isGeneratingReply = false;
     notifyListeners();
