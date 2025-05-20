@@ -16,7 +16,7 @@ class TweetService {
   }
 
   /// 기존: 리플라이 전송
-  Future<bool> sendReply({
+  Future<Map<String, dynamic>> sendReply({
     required String tweetId,
     required String replyText,
   }) async {
@@ -35,10 +35,11 @@ class TweetService {
       await Future.delayed(const Duration(milliseconds: 300));
       resp = await attempt();
     }
-    if (resp.statusCode != 200) return false;
-
-    final body = jsonDecode(resp.body) as Map<String, dynamic>;
-    return body.containsKey('reply_tweet_id');
+    if (resp.statusCode != 200) {
+      throw Exception('리플라이 전송 실패 (${resp.statusCode})');
+    }
+    // 백엔드가 ReplyResponse 구조로 내려주는 전체 맵 반환
+    return jsonDecode(resp.body) as Map<String, dynamic>;
   }
 
   /// 기존: 자동 리플라이 생성
@@ -59,6 +60,18 @@ class TweetService {
     return data['reply'] as String?;
   }
 
+  Future<void> deleteReply({
+    required String replyId,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/tweets/reply/$replyId');
+    final headers = await _authHeaders();
+
+    final resp = await http.delete(uri, headers: headers);
+    if (resp.statusCode != 200 && resp.statusCode != 204) {
+      throw Exception('리플라이 삭제 실패 (${resp.statusCode})');
+    }
+  }
+
   /// 신규: 분류·일정 메타데이터 조회
   Future<Map<String, dynamic>> fetchTweetMetadata({
     required String tweetId,
@@ -72,5 +85,17 @@ class TweetService {
     } else {
       throw Exception('메타데이터 로드 실패 (${resp.statusCode})');
     }
+  }
+  Future<List<Map<String, dynamic>>> fetchReplies({
+    required String tweetId,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.host}${ApiConfig.api}/tweets/$tweetId/replies');
+    final headers = await _authHeaders();
+    final resp = await http.get(uri, headers: headers);
+
+    if (resp.statusCode != 200) {
+      throw Exception('리플 목록 로드 실패 (${resp.statusCode})');
+    }
+    return List<Map<String, dynamic>>.from(jsonDecode(resp.body));
   }
 }

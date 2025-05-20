@@ -4,6 +4,7 @@ import 'package:characters/characters.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/reply.dart';
 import 'loading_circle.dart';
 
 import '../models/post.dart';
@@ -17,6 +18,7 @@ class PostTile extends StatefulWidget {
   final Post post;
   final void Function()? onUserTap;
   final void Function()? onPostTap;
+  final void Function(Reply)? onReplySent;
   final OshiProvider oshiProvider;
   final bool onPostPage;
   final String? oshiUserId;
@@ -26,6 +28,7 @@ class PostTile extends StatefulWidget {
     required this.post,
     this.onUserTap,
     this.onPostTap,
+    this.onReplySent,
     required this.oshiProvider,
     this.onPostPage = false,
     required this.oshiUserId,
@@ -128,20 +131,20 @@ class _PostTileState extends State<PostTile> {
     setState(() => _isSendingReply = true);
     try {
       final tweetProvider = Provider.of<TweetProvider>(context, listen: false);
-      final success = await tweetProvider.sendReply(
+      final newReply = await tweetProvider.sendReply(
         tweetId: widget.post.id,
         replyText: replyText,
       );
       if (!mounted) return;
-      if (success) {
-        _replyController.clear();
-        setState(() => _replyByteCount = 0);
-        _showDialog("완료", "리플라이가 성공적으로 전송되었습니다.");
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tweetProvider.lastErrorMessage ?? "리플라이 전송 실패")),
-        );
-      }
+
+      // clear input
+      _replyController.clear();
+      setState(() => _replyByteCount = 0);
+      _showDialog("완료", "리플라이가 성공적으로 전송되었습니다.");
+
+      // notify parent
+      widget.onReplySent?.call(newReply);    // ← NEW
+
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -375,7 +378,7 @@ class _PostTileState extends State<PostTile> {
     return GestureDetector(
       onTap: widget.onPostTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        margin: const EdgeInsets.only(top:6, bottom:6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.secondary.withAlpha(13),

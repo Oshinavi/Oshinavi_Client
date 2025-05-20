@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import '../models/reply.dart';
 import 'tweet_service.dart';
 
 class TweetProvider with ChangeNotifier {
   final TweetService _tweetService = TweetService();
+
+  List<Reply> _allReplies = [];
+  List<Reply> get allReplies => _allReplies;
 
   String?  _lastErrorMessage;
   bool     _lastReplySuccess = false;
@@ -15,18 +19,17 @@ class TweetProvider with ChangeNotifier {
   bool    get isGeneratingReply => _isGeneratingReply;
 
   /// 기존: 리플라이 전송
-  Future<bool> sendReply({
+  Future<Reply> sendReply({
     required String tweetId,
     required String replyText,
   }) async {
-    final result = await _tweetService.sendReply(
+    final data = await _tweetService.sendReply(
       tweetId: tweetId,
       replyText: replyText,
     );
-    _lastReplySuccess = result;
-    _lastErrorMessage = result ? null : '리플라이 전송에 실패했습니다.';
-    notifyListeners();
-    return result;
+    // Map → Reply 모델로 변환
+    final newReply = Reply.fromMap(data);
+    return newReply;
   }
 
   /// 기존: 자동 리플라이 생성
@@ -42,6 +45,15 @@ class TweetProvider with ChangeNotifier {
     return reply;
   }
 
+  /// 삭제된 리플라이 서버 호출 + 로컬에서 제거
+  Future<void> deleteReply({
+    required String replyId,
+  }) async {
+    await _tweetService.deleteReply(replyId: replyId);
+    _allReplies.removeWhere((r) => r.id.toString() == replyId);
+    notifyListeners();
+  }
+
   /// 신규: 분류·일정 메타데이터(fetch)
   Future<Map<String, dynamic>> fetchTweetMetadata(String tweetId) async {
     try {
@@ -53,5 +65,16 @@ class TweetProvider with ChangeNotifier {
       notifyListeners();
       rethrow;
     }
+  }
+  Future<List<Reply>> fetchReplies({ required String tweetId }) async {
+    // 1) 서버에서 조회
+    final raw = await _tweetService.fetchReplies(tweetId: tweetId);
+    // 2) Map → Reply 모델 변환
+    final list = raw.map((m) => Reply.fromMap(m)).toList();
+    // 3) 로컬 상태에 저장
+    _allReplies = list;
+    // 4) 화면 갱신
+    notifyListeners();
+    return list;
   }
 }
