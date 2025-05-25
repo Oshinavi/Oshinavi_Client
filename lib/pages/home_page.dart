@@ -1,4 +1,3 @@
-// lib/pages/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mediaproject/main.dart';
@@ -40,11 +39,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
+    // 최초 진입 시 프로필 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<UserProfileProvider>().loadProfile();
     });
   }
-
 
   @override
   void didChangeDependencies() {
@@ -52,7 +51,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
     routeObserver.subscribe(this, ModalRoute.of(context)!);
     if (!_isInitialized) {
       _databaseProvider = Provider.of<DatabaseProvider>(context, listen: false);
-      _oshiProvider     = Provider.of<OshiProvider>(context, listen: false);
+      _oshiProvider = Provider.of<OshiProvider>(context, listen: false);
       _loadOshiAndPosts();
       _isInitialized = true;
     }
@@ -72,7 +71,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   void didPopNext() {
+    // 다른 페이지에서 돌아올 때마다 프로필 재로드
     context.read<UserProfileProvider>().loadProfile();
+
     const reloadFrom = {
       OshiProfilePage.routeName,
       ProfilePage.routeName,
@@ -100,8 +101,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
       setState(() {
         _isLoading = false;
         _initialLoadDone = true;
-      }
-      );
+      });
+      // 로드 끝난 뒤에도 프로필 한번 더 갱신
       await context.read<UserProfileProvider>().loadProfile();
     }
   }
@@ -137,6 +138,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
       drawer: AppBarDrawer(),
       onDrawerChanged: (isOpened) {
         if (isOpened) {
+          // 드로어 열 때마다 프로필 갱신
           context.read<UserProfileProvider>().loadProfile();
         }
       },
@@ -144,7 +146,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
       body: RefreshIndicator(
         onRefresh: _loadOshiAndPosts,
         displacement: 16,
-        child: !_initialLoadDone && _isLoading
+        child: (!_initialLoadDone && _isLoading)
             ? ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: const [
@@ -164,7 +166,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
         kToolbarHeight -
         MediaQuery.of(context).padding.top;
 
-    // ① 오시 미등록
+    // 오시 미등록
     if (_oshiTweetId == null || _oshiTweetId!.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -175,15 +177,18 @@ class _HomePageState extends State<HomePage> with RouteAware {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.favorite_border, size: 48, color: theme.primaryColor),
+                  Icon(Icons.favorite_border,
+                      size: 48, color: theme.primaryColor),
                   const SizedBox(height: 12),
-                  Text('아직 등록된 오시가 없어요', style: theme.textTheme.titleMedium),
+                  Text('아직 등록된 오시가 없어요',
+                      style: theme.textTheme.titleMedium),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () async {
                       await Navigator.of(context).push(
                         MaterialPageRoute(
-                          settings: const RouteSettings(name: OshiProfilePage.routeName),
+                          settings:
+                          const RouteSettings(name: OshiProfilePage.routeName),
                           builder: (_) => const OshiProfilePage(),
                         ),
                       );
@@ -194,8 +199,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
                       backgroundColor: theme.primaryColor,
                       foregroundColor: theme.colorScheme.onPrimary,
                       shape: const StadiumBorder(),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      textStyle: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                       elevation: 2,
                     ),
                   ),
@@ -207,7 +214,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
       );
     }
 
-    // ② 오시는 등록됐지만 포스트가 없는 상태
+    // 등록됐지만 포스트 없음
     if (posts.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -218,7 +225,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.chat_bubble_outline, size: 48, color: theme.primaryColor),
+                  Icon(Icons.chat_bubble_outline,
+                      size: 48, color: theme.primaryColor),
                   const SizedBox(height: 12),
                   Text('트윗이 없습니다...', style: theme.textTheme.titleMedium),
                 ],
@@ -229,7 +237,12 @@ class _HomePageState extends State<HomePage> with RouteAware {
       );
     }
 
-    // ③ 포스트가 있을 때
+    // 포스트 있을 때
+    final isDark = theme.brightness == Brightness.dark;
+    final separatorColor = isDark
+        ? theme.dividerColor.withAlpha(77)
+        : Colors.grey.shade400;
+
     return ListView.separated(
       key: const PageStorageKey('home_posts_list'),
       controller: _scrollController,
@@ -258,7 +271,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
         thickness: 0.5,
         indent: 16,
         endIndent: 16,
-        color: theme.dividerColor.withAlpha(77),
+        color: separatorColor,
       ),
     );
   }

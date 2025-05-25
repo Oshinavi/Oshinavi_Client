@@ -57,6 +57,8 @@ dependencies:
   url_launcher: ^6.1.7
 
 
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,9 +73,40 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
+  flutter_native_splash: ^2.2.15
+  flutter_launcher_icons: ^0.10.0
+
+flutter_native_splash:
+  color: "#F5F8FA"
+  image: assets/images/oshinavi_logo_home.png
+  color_dark: "#14171A"
+  image_dark: assets/images/oshinavi_logo_home_dark.png
+
+  android: true
+  ios: true
+
+  android_gravity: center
+  ios_content_mode: center
+
+
+
+flutter_icons:
+  image_path: "assets/images/oshinavi_logo.png"
+  image_path_dark: "assets/images/oshinavi_logo_dark.png"
+  android: true
+  ios: true
+  remove_alpha_ios: false
+
 # The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/images/oshinavi_logo.png
+    - assets/images/oshinavi_logo_dark.png
+    - assets/images/oshinavi_logo_home.png
+    - assets/images/oshinavi_logo_home_dark.png
+
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -109,6 +142,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
 
 dependency_overrides:
   custom_calendar:
