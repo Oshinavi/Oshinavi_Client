@@ -3,12 +3,12 @@ import '../models/reply.dart';
 
 class ReplyTile extends StatelessWidget {
   final Reply reply;
-  final VoidCallback? onDelete;  // ← 삭제 콜백 추가
+  final VoidCallback? onDelete;
 
   const ReplyTile({
     Key? key,
     required this.reply,
-    this.onDelete,              // ← 여기에 전달받습니다.
+    this.onDelete,
   }) : super(key: key);
 
   @override

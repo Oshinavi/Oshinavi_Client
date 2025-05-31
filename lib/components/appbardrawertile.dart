@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Drawer 에서 쓰이는 일종의 메뉴 아이템 위젯.
+/// Drawer 에서 쓰이는 메뉴 아이템 위젯.
 /// 기본으로는 Theme.of(context).colorScheme 을 사용하고,
 /// 필요하면 호출부에서 스타일을 override 할 수 있도록 확장
 class AppBarDrawerTile extends StatelessWidget {
@@ -33,7 +33,7 @@ class AppBarDrawerTile extends StatelessWidget {
         title,
         style: textStyle ??
             TextStyle(
-              color: cs.onSurface,     // 기본 텍스트 컬러
+              color: cs.onSurface,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),

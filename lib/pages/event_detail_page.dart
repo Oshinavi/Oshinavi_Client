@@ -1,4 +1,3 @@
-// lib/pages/event_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +22,7 @@ class EventDetailPage extends StatelessWidget {
           SliverAppBar(
             pinned: true,
             expandedHeight: 180,
-            leading: BackButton(color: Colors.white),
+            leading: const BackButton(color: Colors.white),
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.white),
@@ -187,7 +186,8 @@ class EventDetailPage extends StatelessWidget {
 
                 Text('설명', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
-                Text(schedule.description ?? '-', style: theme.textTheme.bodyMedium),
+                Text(schedule.description.isEmpty ? '-' : schedule.description,
+                    style: theme.textTheme.bodyMedium),
 
                 const SizedBox(height: 40),
               ]),
@@ -231,7 +231,7 @@ class _EditScheduleDialogState extends State<_EditScheduleDialog> {
   late TextEditingController _twtCtrl;
   late DateTime _startAt;
   late DateTime _endAt;
-  String _category = '';
+  late String _category;
   final _categories = ['일반','방송','라디오','라이브','음반','굿즈','영상','게임'];
 
   @override

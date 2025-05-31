@@ -1,4 +1,3 @@
-// lib/pages/monthly_calendar_page.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

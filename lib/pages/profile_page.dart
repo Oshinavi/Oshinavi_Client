@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
   final String tweetId;
-  const ProfilePage({super.key, required this.tweetId});
+  const ProfilePage({Key? key, required this.tweetId}) : super(key: key);
   static const routeName = '/profile';
 
   @override
@@ -36,9 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (_isLoading) {
       return const Scaffold(
-          body: Center(
-              child: CircularProgressIndicator()
-          )
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -150,7 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
 
                   // 바이오
-                  if (user!.bio != null && user!.bio!.isNotEmpty)
+                  if (user!.bio != null && user!.bio!.trim().isNotEmpty)
                     BioBox(text: user!.bio!),
                 ],
               ),

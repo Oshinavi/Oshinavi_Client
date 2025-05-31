@@ -7,7 +7,7 @@ import '../providers/user_profile_provider.dart';
 import '../models/user_profile.dart';
 
 class OshiProfilePage extends StatefulWidget {
-  const OshiProfilePage({super.key});
+  const OshiProfilePage({Key? key}) : super(key: key);
   static const routeName = '/oshi_profile';
 
   @override
@@ -58,7 +58,6 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
     setState(() => _isRegistering = false);
 
     if (result.containsKey('error')) {
-      // ← 반드시 await
       await showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -293,12 +292,12 @@ class _OshiProfilePageState extends State<OshiProfilePage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 팔로잉·팔로워 수 (예시)
+                      // 팔로잉·팔로워 수
                       Row(
                         children: [
-                          Text('${user.followingCount} 팔로잉', style: TextStyle(fontWeight: FontWeight.bold)),
-                          SizedBox(width: 16),
-                          Text('${user.followersCount} 팔로워', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('${user.followingCount} 팔로잉', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 16),
+                          Text('${user.followersCount} 팔로워', style: const TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 24),

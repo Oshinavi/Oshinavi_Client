@@ -45,7 +45,7 @@ class _PostTileState extends State<PostTile> {
   bool _isSendingReply = false;
   bool _showOriginal = false;
 
-  /// 이미지 URL 리스트를 받아 1~4개 격자로 배치해 주는 헬퍼
+  /// 이미지 URL 리스트를 받아 1~4개 격자로 배치하는 헬퍼
   Widget _buildImageGrid(List<String> urls) {
     final display = urls.take(4).toList();
     return Padding(
@@ -396,7 +396,7 @@ class _PostTileState extends State<PostTile> {
     return GestureDetector(
       onTap: widget.onPostTap,
       child: Container(
-        margin: const EdgeInsets.only(top:6, bottom:6),
+        margin: const EdgeInsets.only(top: 6, bottom: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.secondary.withAlpha(13),
@@ -494,7 +494,8 @@ class _PostTileState extends State<PostTile> {
                 decoration: InputDecoration(
                   hintText: "리플 입력...",
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

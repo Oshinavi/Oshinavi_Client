@@ -1,4 +1,3 @@
-// lib/models/reply.dart
 class Reply {
   final int id;
   final String screenName;

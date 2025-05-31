@@ -1,5 +1,3 @@
-// lib/components/appbardrawer.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mediaproject/components/appbardrawertile.dart';
@@ -52,6 +50,7 @@ class _AppBarDrawerState extends State<AppBarDrawer> {
       );
     });
   }
+
   @override
   Widget build(BuildContext context) {
     final colors    = Theme.of(context).colorScheme;
@@ -67,7 +66,7 @@ class _AppBarDrawerState extends State<AppBarDrawer> {
               const SizedBox(height: 20),
 
               // 프로필 헤더 컴포넌트 (reads from provider)
-              ProfileHeader(),
+              const ProfileHeader(),
 
               const SizedBox(height: 20),
               Divider(color: colors.secondary),
@@ -129,7 +128,7 @@ class _AppBarDrawerState extends State<AppBarDrawer> {
                   Navigator.of(context).pop();
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     navigatorKey.currentState!.push(
-                      MaterialPageRoute(builder: (_) => MonthlyCalendarPage()),
+                      MaterialPageRoute(builder: (_) => const MonthlyCalendarPage()),
                     );
                   });
                 },
@@ -144,7 +143,7 @@ class _AppBarDrawerState extends State<AppBarDrawer> {
                   Navigator.of(context).pop();
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     navigatorKey.currentState!.push(
-                      MaterialPageRoute(builder: (_) => SettingsPage()),
+                      MaterialPageRoute(builder: (_) => const SettingsPage()),
                     );
                   });
                 },

@@ -1,14 +1,13 @@
-// lib/pages/register_page.dart
 import 'package:flutter/material.dart';
 import 'package:mediaproject/components/loading_circle.dart';
-import 'package:mediaproject/components/simplebutton.dart';
+import 'package:mediaproject/components/simple_button.dart';
 import 'package:mediaproject/components/text_field_login.dart';
 import 'package:mediaproject/pages/home_page.dart';
 import 'package:mediaproject/services/auth/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
   final void Function()? onTap;
-  const RegisterPage({super.key, required this.onTap});
+  const RegisterPage({Key? key, required this.onTap}) : super(key: key);
   static const routeName = '/register';
 
   @override
@@ -47,7 +46,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final name = nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ 이름을 입력하세요.')),
+        const SnackBar(content: Text('이름을 입력하세요.')),
       );
       setState(() => _isLoading = false);
       return;
@@ -58,7 +57,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ 유효한 이메일 주소를 입력하세요.')),
+        const SnackBar(content: Text('유효한 이메일 주소를 입력하세요.')),
       );
       setState(() => _isLoading = false);
       return;
@@ -67,7 +66,7 @@ class _RegisterPageState extends State<RegisterPage> {
     // 2) 비밀번호 최소 길이 검증
     if (pwController.text.length < 6 || confirmPwController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ 비밀번호는 최소 6자 이상이어야 합니다.')),
+        const SnackBar(content: Text('비밀번호는 최소 6자 이상이어야 합니다.')),
       );
       setState(() => _isLoading = false);
       return;
@@ -75,7 +74,7 @@ class _RegisterPageState extends State<RegisterPage> {
     // 3) 비밀번호 일치 검증
     if (pwController.text != confirmPwController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ 비밀번호가 일치하지 않습니다.')),
+        const SnackBar(content: Text('비밀번호가 일치하지 않습니다.')),
       );
       setState(() => _isLoading = false);
       return;
@@ -86,7 +85,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final authToken = authTokenController.text.trim();
     if (ct0.isEmpty || authToken.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ ct0/auth_token 값을 모두 입력하세요.')),
+        const SnackBar(content: Text('ct0/auth_token 값을 모두 입력하세요.')),
       );
       setState(() => _isLoading = false);
       return;
@@ -214,7 +213,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 SimpleButton(
                   text: _isLoading ? "가입 중..." : "회원가입",
-                  onTap: _isLoading ? null : _signUp,
+                  onTap: _isLoading ? () {} : _signUp,
+                  enabled: !_isLoading,
                 ),
                 const SizedBox(height: 50),
 

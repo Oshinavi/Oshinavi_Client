@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mediaproject/components/input_alert_box.dart';
 import 'package:mediaproject/components/loading_circle.dart';
-import 'package:mediaproject/components/simplebutton.dart';
+import 'package:mediaproject/components/simple_button.dart';
 import 'package:mediaproject/services/oshi_service.dart';
 
 class OshiRegisterPage extends StatefulWidget {
-  const OshiRegisterPage({super.key});
+  const OshiRegisterPage({Key? key}) : super(key: key);
 
   @override
   State<OshiRegisterPage> createState() => _OshiRegisterPageState();
@@ -49,7 +49,6 @@ class _OshiRegisterPageState extends State<OshiRegisterPage> {
             final inputId = _inputController.text.trim();
             if (inputId.isEmpty) return;
 
-            // dialogContext 에서 ScaffoldMessenger / Navigator / HideLoader를 미리 캡처
             final messenger = ScaffoldMessenger.of(dialogContext);
             final navigator = Navigator.of(dialogContext);
             final hideLoader = () => navigator.pop();

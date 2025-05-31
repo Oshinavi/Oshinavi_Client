@@ -1,8 +1,7 @@
-// lib/pages/settings_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:mediaproject/themes/theme_provider.dart';
 import 'package:provider/provider.dart';
+import '../components/setting_tile.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -32,7 +31,7 @@ class SettingsPage extends StatelessWidget {
             child: Text(
               'GENERAL',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
                 fontWeight: FontWeight.bold,
               ),
             ),

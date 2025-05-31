@@ -15,10 +15,10 @@ class PostPage extends StatefulWidget {
   static const routeName = '/post';
 
   const PostPage({
-    super.key,
+    Key? key,
     required this.post,
     required this.oshiProvider,
-  });
+  }) : super(key: key);
 
   @override
   State<PostPage> createState() => _PostPageState();
