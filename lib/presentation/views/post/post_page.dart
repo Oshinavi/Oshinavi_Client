@@ -97,9 +97,9 @@ class _PostPageState extends State<PostPage> {
               onPostTap: null,
               onReplySent: (Reply newReply) {
                 // 새 리플라이가 전송되면 리스트 상단에 추가
-                setState(() {
-                  vm.replies.insert(0, newReply);
-                });
+                // setState(() {
+                //   vm.replies.insert(0, newReply);
+                // });
               },
               oshiTweetId: widget.oshiTweetId,
               onPostPage: true,

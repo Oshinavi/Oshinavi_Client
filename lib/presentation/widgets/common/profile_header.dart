@@ -7,6 +7,7 @@ import '../../../domain/entities/user_profile.dart';
 /// ProfileHeader:
 /// - 사용자 프로필 화면 상단에 사용자 아바타와 이름 스크린네임을 표시
 /// - AuthViewModel.fetchCurrentTweetId()로 현재 로그인된 사용자의 tweetId를 가져와 ProfileViewModel.loadUserProfile() 호출
+
 class ProfileHeader extends StatefulWidget {
   const ProfileHeader({Key? key}) : super(key: key);
 
@@ -18,14 +19,24 @@ class _ProfileHeaderState extends State<ProfileHeader> {
   @override
   void initState() {
     super.initState();
-    // 1) 위젯 렌더링 후 첫 프레임에서 비동기로 로그인된 tweetId 가져오기
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final tweetId = await context.read<AuthViewModel>().fetchCurrentTweetId();
-      if (tweetId != null && tweetId.isNotEmpty) {
-        // 2) tweetId가 유효하면 ProfileViewModel.loadUserProfile 호출
-        context.read<ProfileViewModel>().loadUserProfile(tweetId);
-      }
+      await _loadProfileIfNeeded();
     });
+  }
+
+  /// 필요한 경우에만 프로필 로드
+  Future<void> _loadProfileIfNeeded() async {
+    final authVm = context.read<AuthViewModel>();
+    final profileVm = context.read<ProfileViewModel>();
+
+    final currentTweetId = await authVm.fetchCurrentTweetId();
+
+    if (currentTweetId != null && currentTweetId.isNotEmpty) {
+      // 사용자가 변경되었거나 프로필이 로드되지 않은 경우에만 로드
+      if (profileVm.isUserChanged(currentTweetId) || !profileVm.isProfileLoaded) {
+        await profileVm.loadUserProfile(currentTweetId);
+      }
+    }
   }
 
   @override
@@ -34,7 +45,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     final UserProfile? profile = vm.userProfile;
 
     if (vm.isLoading) {
-      // 3) 로딩 중일 때 로딩 인디케이터 표시
       return const SizedBox(
         width: 60,
         height: 60,
@@ -43,14 +53,12 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     }
 
     if (profile == null) {
-      // 4) 프로필이 null일 때 기본 아바타 표시
       return const CircleAvatar(
         radius: 36,
         child: Icon(Icons.person, size: 36),
       );
     }
 
-    // 5) 프로필이 로드된 경우: CircleAvatar와 텍스트 표시
     return Row(
       children: [
         CircleAvatar(
@@ -64,17 +72,23 @@ class _ProfileHeaderState extends State<ProfileHeader> {
               : null,
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(profile.username,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(
-              '@${profile.tweetId}',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                profile.username,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '@${profile.tweetId}',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ],
     );
